@@ -11,6 +11,7 @@ This repository contains a ESP32 firmware for driving the GDEM075F52 7.5" 4-colo
 - Renders a full 800×480 dashboard on an ACeP e-paper panel
 - Returns to deep sleep to preserve power and panel lifespan
 - Includes a live HTML dashboard for debugging and inspection
+- Fixed 15min deep sleep/polling cycle. Expects REST updates coming in at 00, 15, 30, 45 minutes.
 
 ---
 
