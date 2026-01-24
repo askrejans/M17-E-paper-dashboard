@@ -1,6 +1,6 @@
-# M17-E-paper-dashboard: ESP32 GDEM075F52 E-Paper Dashboard (800×480, ACeP)
+# M17-E-paper-dashboard: ESP32 4-color GDEM075F52 7.5" E-Paper Dashboard (800×480, ACeP)
 
-This repository contains a ESP32 firmware for driving the GDEM075F52 7.5" 4-color ACeP e-paper display and exposing it as a network-driven dashboard endpoint with HomeAssistant for a personal DIY home dashboard. Strings for output are in Latvian (remember, personal DIY project). Language/proper UTF-8 support might come later if I am bored. Also yaml configurable json data structures, panels might come. Feel free to fork and improve. Icons TO-DO.
+This repository contains a ESP32 firmware for driving the 4-color GDEM075F52 7.5" 4-color ACeP e-paper display and exposing it as a network-driven dashboard endpoint with HomeAssistant for a personal DIY home dashboard. Strings for output are in Latvian (remember, personal DIY project). Language/proper UTF-8 support might come later if I am bored. Also yaml configurable json data structures, panels might come. Feel free to fork and improve. Icons TO-DO.
 
 ---
 
@@ -12,7 +12,7 @@ This repository contains a ESP32 firmware for driving the GDEM075F52 7.5" 4-colo
 - Returns to deep sleep to preserve power and panel lifespan
 - Includes a live HTML dashboard for debugging and inspection
 - Fixed 15min deep sleep/polling cycle. Expects REST updates coming in at 00, 15, 30, 45 minutes.
-
+- Supports only the specific GoodDisplay 4-color 7.5" e-paper screen (GDEM075F52)
 ---
 
 ## Hardware
