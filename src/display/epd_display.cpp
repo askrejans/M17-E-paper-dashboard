@@ -1,5 +1,5 @@
-#include "Display_EPD_W21_spi.h"
-#include "Display_EPD_W21.h"
+#include "display/epd_spi.h"
+#include "display/epd_display.h"
 
 void EPD_init(void)
 {
@@ -180,63 +180,6 @@ void lcd_chkstatus(void)
   }  
 }
 
-void Display_All_Black(void)
-{
-  unsigned long i; 
-
-  EPD_W21_WriteCMD(0x10);
-  {
-    for(i=0;i<ALLSCREEN_BYTES;i++)
-    {
-      EPD_W21_WriteDATA(0x00);
-    }
-  } 
-  EPD_refresh();  
-  
-}
-
-void Display_All_White(void)
-{
-  unsigned long i;
- 
-  EPD_W21_WriteCMD(0x10);
-  {
-    for(i=0;i<ALLSCREEN_BYTES;i++)
-    {
-      EPD_W21_WriteDATA(0x55);
-    }
-  } 
-   EPD_refresh(); 
-}
-
-void Display_All_Yellow(void)
-{
-  unsigned long i;
- 
-  EPD_W21_WriteCMD(0x10);
-  {
-    for(i=0;i<ALLSCREEN_BYTES;i++)
-    {
-      EPD_W21_WriteDATA(0xaa);
-    }
-  }
-   EPD_refresh(); 
-}
-
-void Display_All_Red(void)
-{
-  unsigned long i;
- 
-  EPD_W21_WriteCMD(0x10);
-  {
-    for(i=0;i<ALLSCREEN_BYTES;i++)
-    {
-      EPD_W21_WriteDATA(0xff);
-    }
-  } 
-   EPD_refresh(); 
-}
-
 unsigned char Color_get(unsigned char color)
 {
   unsigned datas;
@@ -255,6 +198,7 @@ unsigned char Color_get(unsigned char color)
       datas=red;
       break;      
     default:
+      datas=black;
       break;      
   }
    return datas;

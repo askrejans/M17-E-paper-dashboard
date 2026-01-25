@@ -1,2 +1,16 @@
-.pio
-.vscode/*
+# Ignore generated secrets header
+include/secrets.h
+
+# Ignore local env file (keep example in repository)
+.env
+# PlatformIO
+.pio/
+.vscode/
+*.pyc
+
+# Secrets
+include/secrets.h
+.env
+
+# OS
+.DS_Store

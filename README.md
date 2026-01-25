@@ -54,20 +54,41 @@ Deep sleep → Wake on timer → Wi-Fi connect → Wait for HTTP POST (/update)
 
 ## Build and Flash
 
-1. Configure Wi-Fi in src/main.cpp:
+This project supports generating Wi‑Fi secrets at build time from a local `.env` file or environment variables.
 
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+1. Create a `.env` file at the project root (ignored by git) or export the variables in your shell:
 
-2. Build and upload:
+```bash
+# .env
+SSID=your_wifi_ssid
+PASSWORD=your_wifi_password
 
-pio run --target upload
+# or export in shell
+export SSID=your_wifi_ssid
+export PASSWORD=your_wifi_password
+```
+
+2. Build and upload (PlatformIO will run the generator to create `include/secrets.h`):
+
+```bash
+set -a; source .env; set +a   # optional: load .env into shell
+platformio run --target upload
+```
 
 3. Serial monitor:
 
-pio device monitor
+```bash
+platformio device monitor
+```
 
-Serial output is the ground truth for parsing, memory health, and power state.
+The build script `build/generate_secrets.py` will create `include/secrets.h` with:
+
+```c
+#define WIFI_SSID "..."
+#define WIFI_PASSWORD "..."
+```
+
+This keeps secrets out of version control. If you prefer not to use the generator, you can manually create `include/secrets.h`.
 
 ---
 

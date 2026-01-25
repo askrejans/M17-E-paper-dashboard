@@ -1,5 +1,5 @@
-#ifndef DISPLAY_EPD_W21_H
-#define DISPLAY_EPD_W21_H
+#ifndef EPD_DISPLAY_H
+#define EPD_DISPLAY_H
 
 #include <Arduino.h>
 
@@ -13,12 +13,6 @@ void EPD_init_Fast(void);
 void EPD_sleep(void);
 void EPD_refresh(void);
 void lcd_chkstatus(void);
-
-// Display patterns
-void Display_All_Black(void);
-void Display_All_White(void);
-void Display_All_Yellow(void);
-void Display_All_Red(void);
 
 // Picture display
 void PIC_display(const unsigned char* picData);
