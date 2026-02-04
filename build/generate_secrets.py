@@ -36,10 +36,12 @@ def generate_secrets(source=None, target=None, env=None):
     # Prefer actual environment variables, fallback to .env file
     ssid = os.environ.get("SSID", "")
     password = os.environ.get("PASSWORD", "")
+    language = os.environ.get("LANGUAGE", "")
 
     file_values = read_env_file(env_path)
     ssid = ssid or file_values.get("SSID", "")
     password = password or file_values.get("PASSWORD", "")
+    language = language or file_values.get("LANGUAGE", "LV")
 
     include_dir = join(root, "include")
     os.makedirs(include_dir, exist_ok=True)
@@ -50,7 +52,7 @@ def generate_secrets(source=None, target=None, env=None):
         fh.write("#pragma once\n")
         fh.write(f'#define WIFI_SSID "{ssid}"\n')
         fh.write(f'#define WIFI_PASSWORD "{password}"\n')
-
+        fh.write(f"#define LANGUAGE \"{language}\"\n")
     print("[generate_secrets] Wrote:", secrets_path)
 
 

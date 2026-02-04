@@ -1,0 +1,149 @@
+# Home Assistant Automation Example
+# Place this in your configuration.yaml
+
+# Template sensor to fetch weather forecast data
+template:
+  - trigger:
+      - platform: time_pattern
+        minutes: "/15"
+      - platform: homeassistant
+        event: start
+    action:
+      - action: weather.get_forecasts
+        data:
+          type: daily
+        target:
+          entity_id: weather.home
+        response_variable: daily_forecast
+    sensor:
+      - name: "Weather Forecast Data"
+        unique_id: weather_forecast_data
+        state: "{{ now().isoformat() }}"
+        attributes:
+          forecast: "{{ daily_forecast['weather.home'].forecast }}"
+
+# REST Command Configuration
+rest_command:
+  epaper_update:
+    url: "http://YOUR_ESP32_IP/update"
+    method: POST
+    content_type: "application/json"
+    payload: >
+      {
+        "date": "{{ now().strftime('%d.%m.%Y') }}",
+        "time": "{{ now().strftime('%H:%M') }}",
+
+        "weather": {
+          "state": "{{ states('weather.home') }}",
+          "temp": {{ states('sensor.outside_temperature') | float(0) }},
+          "humidity": {{ states('sensor.outside_humidity') | float(0) }},
+          "pressure": {{ state_attr('weather.home','pressure') | float(0) }},
+          "clouds": {{ state_attr('weather.home','cloud_coverage') | float(0) }},
+          "wind": {{ state_attr('weather.home','wind_speed') | float(0) }},
+          "gust": {{ state_attr('weather.home','wind_gust_speed') | float(0) }}
+        },
+
+        "rooms": {
+          "living": { 
+            "temp": {{ states('sensor.livingroom_temperature') | float(0) }}, 
+            "hum": {{ states('sensor.livingroom_humidity') | float(0) }} 
+          },
+          "bedroom": { 
+            "temp": {{ states('sensor.bedroom_temperature') | float(0) }}, 
+            "hum": {{ states('sensor.bedroom_humidity') | float(0) }} 
+          },
+          "kids": { 
+            "temp": {{ states('sensor.kids_room_temperature') | float(0) }}, 
+            "hum": {{ states('sensor.kids_room_humidity') | float(0) }} 
+          },
+          "bath": { 
+            "temp": {{ states('sensor.bathroom_temperature') | float(0) }}, 
+            "hum": {{ states('sensor.bathroom_humidity') | float(0) }} 
+          },
+          "office": { 
+            "temp": {{ states('sensor.guest_room_temperature') | float(0) }}, 
+            "hum": {{ states('sensor.guest_room_humidity') | float(0) }} 
+          }
+        },
+
+        "internet": {
+          "down": {{ states('sensor.speedtest_download') | float(0) }},
+          "up": {{ states('sensor.speedtest_upload') | float(0) }},
+          "ping": {{ states('sensor.speedtest_ping') | float(0) }}
+        },
+
+        "power": {
+          "price": {{ states('sensor.nordpool_kwh_lv') | float(0) }},
+          "total_power": {{ states('sensor.elektriba_galvena_total_power') | float(0) }},
+          "voltage": {{ states('sensor.elektriba_galvena_spriegums') | float(0) }},
+          "frequency": {{ states('sensor.elektriba_galvena_ac_frequency') | float(0) }},
+          "power_factor": {{ states('sensor.elektriba_galvena_total_power_factor') | float(0) }},
+          "monthly_consumption": {{ states('sensor.paterins_menesi') | float(0) }}
+        },
+
+        "family": [
+          { 
+            "name": "Arvis", 
+            "state": "{{ states('person.arvis') }}", 
+            "loc": "{{ state_attr('person.arvis','friendly_name') }}" 
+          },
+          { 
+            "name": "Klaudija", 
+            "state": "{{ states('person.klaudija') }}", 
+            "loc": "{{ state_attr('person.klaudija','friendly_name') }}" 
+          },
+          { 
+            "name": "Tomass", 
+            "state": "{{ states('person.tomass') }}", 
+            "loc": "{{ state_attr('person.tomass','friendly_name') }}" 
+          },
+          { 
+            "name": "Patriks", 
+            "state": "{{ states('person.patriks') }}", 
+            "loc": "{{ state_attr('person.patriks','friendly_name') }}" 
+          }
+        ],
+
+        "forecast": [
+          {% set forecast = state_attr('sensor.weather_forecast_data', 'forecast') %}
+          {% if forecast %}
+            {% for day in forecast[1:6] %}
+          {
+            "condition": "{{ day.condition }}",
+            "temp_low": {{ day.templow | float(day.temperature) | float(0) }},
+            "temp_high": {{ day.temperature | float(0) }},
+            "precipitation": {{ day.precipitation | float(0) }}
+          }{{ "," if not loop.last else "" }}
+            {% endfor %}
+          {% else %}
+          {"condition": "unknown", "temp_low": 0, "temp_high": 0, "precipitation": 0},
+          {"condition": "unknown", "temp_low": 0, "temp_high": 0, "precipitation": 0},
+          {"condition": "unknown", "temp_low": 0, "temp_high": 0, "precipitation": 0},
+          {"condition": "unknown", "temp_low": 0, "temp_high": 0, "precipitation": 0},
+          {"condition": "unknown", "temp_low": 0, "temp_high": 0, "precipitation": 0}
+          {% endif %}
+        ]
+      }
+
+# Automation to call the REST command
+automation:
+  - alias: "Update E-Paper Dashboard"
+    description: "Send dashboard data to ESP32 e-paper display every 15 minutes"
+    trigger:
+      - platform: time_pattern
+        minutes: "/15"
+    action:
+      - service: rest_command.epaper_update
+        data: {}
+
+# Notes:
+# 1. The template sensor fetches forecast data using weather.get_forecasts action
+# 2. Forecast data is stored in sensor.weather_forecast_data attributes
+# 3. The REST command reads the forecast from this sensor
+# 4. Forecast fields:
+#    - condition: weather state (sunny, cloudy, rainy, etc.)
+#    - templow: minimum temperature (fallback to temperature if not available)
+#    - temperature: maximum/average temperature
+#    - precipitation: precipitation probability or amount
+# 5. Different weather integrations may use different field names
+# 6. The template sensor updates every 15 minutes and on Home Assistant start

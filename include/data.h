@@ -13,8 +13,16 @@ enum
 
 struct Person
 {
-  char name[16];
-  char state[12];
+  char name[24];
+  char state[32];
+};
+
+struct ForecastDay
+{
+  char condition[24];
+  float tempLow;
+  float tempHigh;
+  float precipitation;
 };
 
 struct DashboardData
@@ -29,6 +37,7 @@ struct DashboardData
   float powerPrice, powerTotal, powerVoltage, powerFrequency, powerFactor, powerMonth;
 
   Person family[4];
+  ForecastDay forecast[5];  // 5-day forecast
 };
 
 extern DashboardData data;

@@ -10,7 +10,6 @@ float jf(JsonVariant v);
 #endif
 bool badTemp(float t);
 bool badHum(float h);
-const char *familyStateLV(const char *s);
 void goToSleepSeconds(uint32_t sec);
 
 void logTitle(const char *t);

@@ -54,7 +54,7 @@ Deep sleep → Wake on timer → Wi-Fi connect → Wait for HTTP POST (/update)
 
 ## Build and Flash
 
-This project supports generating Wi‑Fi secrets at build time from a local `.env` file or environment variables.
+This project supports generating Wi‑Fi secrets and language configuration at build time from a local `.env` file or environment variables.
 
 1. Create a `.env` file at the project root (ignored by git) or export the variables in your shell:
 
@@ -62,10 +62,12 @@ This project supports generating Wi‑Fi secrets at build time from a local `.en
 # .env
 SSID=your_wifi_ssid
 PASSWORD=your_wifi_password
+LANGUAGE=LV
 
 # or export in shell
 export SSID=your_wifi_ssid
 export PASSWORD=your_wifi_password
+export LANGUAGE=LV
 ```
 
 2. Build and upload (PlatformIO will run the generator to create `include/secrets.h`):
@@ -86,9 +88,23 @@ The build script `build/generate_secrets.py` will create `include/secrets.h` wit
 ```c
 #define WIFI_SSID "..."
 #define WIFI_PASSWORD "..."
+#define LANGUAGE "..."
 ```
 
 This keeps secrets out of version control. If you prefer not to use the generator, you can manually create `include/secrets.h`.
+
+---
+
+## Multi-Language Support
+
+The dashboard supports multiple languages configured via the `LANGUAGE` setting in `.env`:
+
+- `LV` - Latvian (default)
+- `EN` - English
+
+All UI text including box titles, labels, weather states, and room names are translated. The translation system is defined in `src/lang.cpp` and can be easily extended with additional languages.
+
+See [LANGUAGE.md](LANGUAGE.md) for detailed documentation on adding new languages.
 
 ---
 

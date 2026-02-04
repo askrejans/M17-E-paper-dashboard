@@ -20,6 +20,7 @@
 #include "web/web.h"
 #include "config.h"
 #include "init/init.h"
+#include "lang.h"
 
 // When running unit tests, the test harness provides its own
 // `fb`, `data`, `redraw_requested`, and `setup()`/`loop()` symbols.
@@ -48,6 +49,7 @@ volatile bool redraw_requested = false;
 #ifndef PIO_UNIT_TESTING
 void setup()
 {
+  initLanguage();
   initHardware();
   initWiFi(ssid, password);
   setupWebServer(server);

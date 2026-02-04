@@ -5,6 +5,7 @@
 #include "font_8x16.h"
 #include "utils/utils.h"
 #include "data.h"
+#include "lang.h"
 #include <ArduinoJson.h>
 
 // Drawing tests (defined in test_drawing.cpp)
@@ -13,12 +14,65 @@ void test_fillRect_and_pack(void);
 void test_rect_border(void);
 void test_rectWithTitle_changes_titlebar(void);
 
-// More tests
+// Font tests (defined in test_fonts.cpp)
 void test_font_init_nonzero(void);
 void test_text_utf8_latvian(void);
 void test_text_degree_symbol(void);
+
+// Web tests (defined in test_web.cpp)
 void test_web_json_parsing(void);
+
+// Console tests (defined in test_console.cpp)
 void test_console_log_functions(void);
+
+// Language tests (defined in test_lang.cpp)
+void test_translate_weather_sunny(void);
+void test_translate_weather_clear_night(void);
+void test_translate_weather_cloudy(void);
+void test_translate_weather_rainy(void);
+void test_translate_weather_snowy(void);
+void test_translate_weather_fog(void);
+void test_translate_weather_hail(void);
+void test_translate_weather_windy(void);
+void test_translate_weather_lightning(void);
+void test_translate_weather_thunderstorm(void);
+void test_translate_weather_unknown_fallback(void);
+void test_translate_family_home(void);
+void test_translate_family_not_home(void);
+void test_translate_family_unknown_fallback(void);
+void test_lang_struct_not_null(void);
+void test_lang_outdoor_title(void);
+void test_lang_indoor_title(void);
+void test_lang_network_title(void);
+void test_lang_electricity_title(void);
+void test_all_weather_states_covered(void);
+
+// Weather tests (defined in test_weather.cpp)
+void test_weather_icon_sunny(void);
+void test_weather_icon_clear_night(void);
+void test_weather_icon_cloudy(void);
+void test_weather_icon_partlycloudy(void);
+void test_weather_icon_rainy(void);
+void test_weather_icon_pouring(void);
+void test_weather_icon_snowy(void);
+void test_weather_icon_snowy_rainy(void);
+void test_weather_icon_fog(void);
+void test_weather_icon_hail(void);
+void test_weather_icon_windy(void);
+void test_weather_icon_windy_variant(void);
+void test_weather_icon_lightning(void);
+void test_weather_icon_thunderstorm(void);
+void test_weather_icon_lightning_rainy(void);
+void test_weather_icon_unknown_fallback(void);
+void test_weather_icon_invalid_fallback(void);
+void test_forecast_data_structure(void);
+void test_forecast_condition_buffer_size(void);
+void test_forecast_multiple_days(void);
+void test_forecast_negative_temperatures(void);
+void test_forecast_zero_precipitation(void);
+void test_forecast_heavy_precipitation(void);
+void test_icon_data_not_null(void);
+void test_icon_size(void);
 
 unsigned char *fb;
 DashboardData data;
@@ -76,15 +130,6 @@ void test_badHum(void) {
     TEST_ASSERT_FALSE(badHum(50.0f));
 }
 
-void test_familyStateLV(void) {
-    TEST_ASSERT_EQUAL_STRING("Mājās", familyStateLV("home"));
-    TEST_ASSERT_EQUAL_STRING("Prom", familyStateLV("not_home"));
-    TEST_ASSERT_EQUAL_STRING("unknown", familyStateLV("unknown"));
-    TEST_ASSERT_EQUAL_STRING("", familyStateLV(""));
-    TEST_ASSERT_EQUAL_STRING("away", familyStateLV("away"));
-    TEST_ASSERT_EQUAL_STRING("Mājās", familyStateLV("home"));
-}
-
 void test_badTemp_boundary(void) {
     TEST_ASSERT_FALSE(badTemp(19));
     TEST_ASSERT_FALSE(badTemp(25));
@@ -116,26 +161,84 @@ void test_fill(void) {
 void setup() {
     fb = (unsigned char *)malloc(ALLSCREEN_BYTES);
     font8x16_init();
+    initLanguage();
+    
     UNITY_BEGIN();
     RUN_TEST(test_config_constants);
     RUN_TEST(test_color_get);
     RUN_TEST(test_jf);
     RUN_TEST(test_badTemp);
     RUN_TEST(test_badHum);
-    RUN_TEST(test_familyStateLV);
     RUN_TEST(test_badTemp_boundary);
     RUN_TEST(test_badHum_boundary);
     RUN_TEST(test_fill);
-    // drawing tests
+    
+    // Drawing tests
     RUN_TEST(test_px_pack);
     RUN_TEST(test_fillRect_and_pack);
     RUN_TEST(test_rect_border);
     RUN_TEST(test_rectWithTitle_changes_titlebar);
+    
+    // Font tests
     RUN_TEST(test_font_init_nonzero);
     RUN_TEST(test_text_utf8_latvian);
     RUN_TEST(test_text_degree_symbol);
+    
+    // Web tests
     RUN_TEST(test_web_json_parsing);
+    
+    // Console tests
     RUN_TEST(test_console_log_functions);
+    
+    // Language tests
+    RUN_TEST(test_translate_weather_sunny);
+    RUN_TEST(test_translate_weather_clear_night);
+    RUN_TEST(test_translate_weather_cloudy);
+    RUN_TEST(test_translate_weather_rainy);
+    RUN_TEST(test_translate_weather_snowy);
+    RUN_TEST(test_translate_weather_fog);
+    RUN_TEST(test_translate_weather_hail);
+    RUN_TEST(test_translate_weather_windy);
+    RUN_TEST(test_translate_weather_lightning);
+    RUN_TEST(test_translate_weather_thunderstorm);
+    RUN_TEST(test_translate_weather_unknown_fallback);
+    RUN_TEST(test_translate_family_home);
+    RUN_TEST(test_translate_family_not_home);
+    RUN_TEST(test_translate_family_unknown_fallback);
+    RUN_TEST(test_lang_struct_not_null);
+    RUN_TEST(test_lang_outdoor_title);
+    RUN_TEST(test_lang_indoor_title);
+    RUN_TEST(test_lang_network_title);
+    RUN_TEST(test_lang_electricity_title);
+    RUN_TEST(test_all_weather_states_covered);
+    
+    // Weather tests
+    RUN_TEST(test_weather_icon_sunny);
+    RUN_TEST(test_weather_icon_clear_night);
+    RUN_TEST(test_weather_icon_cloudy);
+    RUN_TEST(test_weather_icon_partlycloudy);
+    RUN_TEST(test_weather_icon_rainy);
+    RUN_TEST(test_weather_icon_pouring);
+    RUN_TEST(test_weather_icon_snowy);
+    RUN_TEST(test_weather_icon_snowy_rainy);
+    RUN_TEST(test_weather_icon_fog);
+    RUN_TEST(test_weather_icon_hail);
+    RUN_TEST(test_weather_icon_windy);
+    RUN_TEST(test_weather_icon_windy_variant);
+    RUN_TEST(test_weather_icon_lightning);
+    RUN_TEST(test_weather_icon_thunderstorm);
+    RUN_TEST(test_weather_icon_lightning_rainy);
+    RUN_TEST(test_weather_icon_unknown_fallback);
+    RUN_TEST(test_weather_icon_invalid_fallback);
+    RUN_TEST(test_forecast_data_structure);
+    RUN_TEST(test_forecast_condition_buffer_size);
+    RUN_TEST(test_forecast_multiple_days);
+    RUN_TEST(test_forecast_negative_temperatures);
+    RUN_TEST(test_forecast_zero_precipitation);
+    RUN_TEST(test_forecast_heavy_precipitation);
+    RUN_TEST(test_icon_data_not_null);
+    RUN_TEST(test_icon_size);
+    
     UNITY_END();
 }
 

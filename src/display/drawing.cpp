@@ -4,6 +4,8 @@
 #include "font_8x16.h"
 #include "data.h"
 #include "utils/utils.h"
+#include "icons.h"
+#include "lang.h"
 
 struct Utf8Map
 {
@@ -170,135 +172,228 @@ void text(int x, int y, const char *s, int c)
   }
 }
 
+void icon(int x, int y, const uint8_t *iconData, int c)
+{
+  // Draw 24x24 icon from PROGMEM
+  for (int row = 0; row < 24; row++)
+  {
+    for (int col = 0; col < 24; col++)
+    {
+      int byteIdx = row * 3 + (col / 8);
+      int bitIdx = 7 - (col % 8);
+      uint8_t byte = pgm_read_byte(&iconData[byteIdx]);
+      
+      if (byte & (1 << bitIdx))
+        px(x + col, y + row, c);
+    }
+  }
+}
+
+const uint8_t* getWeatherIcon(const char *state)
+{
+  // Map weather state strings to icons (exact matches from Home Assistant)
+  if (strcmp(state, "sunny") == 0)
+    return ICON_SUNNY;
+  if (strcmp(state, "clear-night") == 0)
+    return ICON_CLEAR_NIGHT;
+  if (strcmp(state, "cloudy") == 0)
+    return ICON_CLOUDY;
+  if (strcmp(state, "partlycloudy") == 0)
+    return ICON_PARTLYCLOUDY;
+  if (strcmp(state, "rainy") == 0)
+    return ICON_RAINY;
+  if (strcmp(state, "pouring") == 0)
+    return ICON_RAINY;
+  if (strcmp(state, "snowy") == 0)
+    return ICON_SNOWY;
+  if (strcmp(state, "snowy-rainy") == 0)
+    return ICON_SNOWY;
+  if (strcmp(state, "fog") == 0)
+    return ICON_FOG;
+  if (strcmp(state, "hail") == 0)
+    return ICON_HAIL;
+  if (strcmp(state, "windy") == 0)
+    return ICON_WINDY;
+  if (strcmp(state, "windy-variant") == 0)
+    return ICON_WINDY_VARIANT;
+  if (strcmp(state, "lightning") == 0)
+    return ICON_THUNDERSTORM;
+  if (strcmp(state, "lightning-rainy") == 0)
+    return ICON_THUNDERSTORM;
+  if (strcmp(state, "exceptional") == 0)
+    return ICON_WINDY;
+  
+  // Default to cloudy if unknown
+  return ICON_CLOUDY;
+}
+
 void draw_dashboard()
 {
   fill(WHITE);
 
   fillRect(0, 0, 800, 40, BLACK);
 
-  char header[48];
-  sprintf(header, "     %s               atjaunots @ %s", data.date, data.time);
-  int header_x = (800 - strlen(header) * 8) / 2;
+  // Left: House name
+  text(20, 12, lang.house_name, WHITE);
+  
+  // Center: Date
+  int date_width = strlen(data.date) * 8;
+  int date_x = (800 - date_width) / 2;
+  text(date_x, 12, data.date, YELLOW);
+  
+  // Right: Refresh time
+  char refresh_text[32];
+  sprintf(refresh_text, "%s %s", lang.header_updated, data.time);
+  int refresh_width = strlen(refresh_text) * 8;
+  int refresh_x = 800 - refresh_width - 20;
+  text(refresh_x, 12, refresh_text, YELLOW);
 
-  text(20, 12, "M17", WHITE);
-  text(header_x, 12, header, YELLOW);
+  char b[96];
 
-  char b[64];
-
-  rectWithTitle(10, 50, 260, 200, "Ārā");
+  rectWithTitle(10, 50, 260, 200, lang.title_outdoor);
 
   int y = 80;
 
+  /* Weather icon and state - centered at top */
+  const uint8_t* weatherIcon = getWeatherIcon(data.weatherState);
+  const char* weatherLV = translateWeatherState(data.weatherState);
+  
+  // Center the icon and text
+  int weatherTextWidth = strlen(weatherLV) * 8;
+  int totalWidth = 24 + 8 + weatherTextWidth;
+  int centerX = 10 + (260 - totalWidth) / 2;
+  
+  icon(centerX, y, weatherIcon, BLACK);
+  text(centerX + 24 + 8, y + 4, weatherLV, BLACK);
+  
+  y += 30;
+
   /* Temperatūra */
-  sprintf(b, "Temperatūra  %.1f°C", data.outTemp);
+  sprintf(b, "%s  %.1f°C", lang.label_temperature, data.outTemp);
   text(20, y, b, (data.outTemp < -10 || data.outTemp > 30) ? RED : BLACK);
   y += 18;
 
   /* Mitrums */
-  sprintf(b, "Mitrums       %.0f%%", data.outHum);
+  sprintf(b, "%s       %.0f%%", lang.label_humidity, data.outHum);
   text(20, y, b, BLACK);
   y += 18;
 
   /* Gaisa spiediens */
-  sprintf(b, "Gaisa spied.  %.0f hPa", data.outPress);
+  sprintf(b, "%s  %.0f hPa", lang.label_pressure, data.outPress);
   text(20, y, b, BLACK);
   y += 18;
 
   /* Vēja stiprums */
-  sprintf(b, "Vējš          %.1f km/h", data.outWind);
+  sprintf(b, "%s          %.1f km/h", lang.label_wind, data.outWind);
   text(20, y, b, (data.outWind > 20) ? RED : BLACK);
   y += 18;
 
   /* Brāzmās */
-  sprintf(b, "Brāzmās       %.1f km/h", data.outGust);
+  sprintf(b, "%s       %.1f km/h", lang.label_gusts, data.outGust);
   text(20, y, b, (data.outGust > 25) ? RED : BLACK);
   y += 18;
 
   /* Mākoņu daudzums */
-  sprintf(b, "Mākoņi        %.0f %%", data.clouds);
-  text(20, y, b, BLACK);
-  y += 18;
-
-  /* Stāvoklis */
-  sprintf(b, "Apstākļi      %s", data.weatherState);
+  sprintf(b, "%s        %.0f %%", lang.label_clouds, data.clouds);
   text(20, y, b, BLACK);
 
-  rectWithTitle(280, 50, 260, 200, "Telpās");
+  /* 5-Day Forecast box in upper right */
+  rectWithTitle(550, 50, 230, 200, lang.title_forecast);
+  
+  int fy = 80;
+  for (int i = 0; i < 5; i++)
+  {
+    sprintf(b, "D+%d", i + 1);
+    text(560, fy + 4, b, BLACK);
+    
+    const uint8_t* fIcon = getWeatherIcon(data.forecast[i].condition);
+    icon(590, fy, fIcon, BLACK);
+    
+    sprintf(b, "%.0f-%.0f°C %.0fmm", 
+            data.forecast[i].tempLow, 
+            data.forecast[i].tempHigh,
+            data.forecast[i].precipitation);
+    text(620, fy + 4, b, BLACK);
+    
+    fy += 24;
+  }
+
+  rectWithTitle(280, 50, 260, 200, lang.title_indoor);
 
   y = 80;
 
   /* Header */
-  text(290, y, "              Temp    Mitr", BLACK);
+  text(290, y, lang.label_temp_hum_header, BLACK);
   y += 18;
   /* Dzīvojamā istaba */
-  sprintf(b, "Viesistaba    %.1f°C  %.0f%%", data.lrT, data.lrH);
+  sprintf(b, "%s    %.1f°C  %.0f%%", lang.room_living, data.lrT, data.lrH);
   text(290, y, b, (badTemp(data.lrT) || badHum(data.lrH)) ? RED : BLACK);
   y += 18;
 
   /* Guļamistaba */
-  sprintf(b, "Guļamistaba   %.1f°C  %.0f%%", data.brT, data.brH);
+  sprintf(b, "%s   %.1f°C  %.0f%%", lang.room_bedroom, data.brT, data.brH);
   text(290, y, b, (badTemp(data.brT) || badHum(data.brH)) ? RED : BLACK);
   y += 18;
 
   /* Bērnu istaba */
-  sprintf(b, "Bērnu istaba  %.1f°C  %.0f%%", data.krT, data.krH);
+  sprintf(b, "%s  %.1f°C  %.0f%%", lang.room_kids, data.krT, data.krH);
   text(290, y, b, (badTemp(data.krT) || badHum(data.krH)) ? RED : BLACK);
   y += 18;
 
   /* Vannas istaba */
-  sprintf(b, "Vannasistaba  %.1f°C  %.0f%%", data.baT, data.baH);
+  sprintf(b, "%s  %.1f°C  %.0f%%", lang.room_bathroom, data.baT, data.baH);
   text(290, y, b, badHum(data.baH) ? RED : BLACK);
   y += 18;
 
   /* Ofiss */
-  sprintf(b, "Ofiss         %.1f°C  %.0f%%", data.ofT, data.ofH);
+  sprintf(b, "%s         %.1f°C  %.0f%%", lang.room_office, data.ofT, data.ofH);
   text(290, y, b, (badTemp(data.ofT) || badHum(data.ofH)) ? RED : BLACK);
 
-  rectWithTitle(10, 270, 260, 180, "Atrašanās vieta");
+  rectWithTitle(10, 270, 260, 180, lang.title_location);
 
   for (int i = 0; i < 4; i++)
   {
-    const char *st = familyStateLV(data.family[i].state);
+    const char *st = translateFamilyState(data.family[i].state);
 
     sprintf(b, "%s: %s", data.family[i].name, st);
     text(20, 300 + i * 20, b,
          strcmp(data.family[i].state, "home") == 0 ? BLACK : RED);
   }
 
-  rectWithTitle(280, 270, 260, 180, "Tīkls");
+  rectWithTitle(280, 270, 260, 180, lang.title_network);
 
-  sprintf(b, "Down %.2f Mbps", data.down);
+  sprintf(b, "%s %.2f Mbps", lang.label_download, data.down);
   text(290, 300, b, (data.down < 10) ? RED : BLACK);
-  sprintf(b, "Up   %.2f Mbps", data.up);
+  sprintf(b, "%s   %.2f Mbps", lang.label_upload, data.up);
   text(290, 320, b, (data.up < 5) ? RED : BLACK);
-  sprintf(b, "Ping %.0f ms", data.ping);
+  sprintf(b, "%s %.0f ms", lang.label_ping, data.ping);
   text(290, 340, b, (data.ping > 50) ? RED : BLACK);
 
-  rectWithTitle(550, 270, 230, 180, "Elektrība");
+  rectWithTitle(550, 270, 230, 180, lang.title_electricity);
 
   int py = 300;
 
-  sprintf(b, "Cena     %.2f €/MWh", data.powerPrice);
+  sprintf(b, "%s     %.2f €/MWh", lang.label_price, data.powerPrice);
   text(570, py, b, (data.powerPrice > 20) ? RED : BLACK);
   py += 18;
 
-  sprintf(b, "Jauda    %.0f W", data.powerTotal);
+  sprintf(b, "%s    %.0f W", lang.label_power, data.powerTotal);
   text(570, py, b, (data.powerTotal > 5000) ? RED : BLACK);
   py += 18;
 
-  sprintf(b, "Sprieg.  %.0f V", data.powerVoltage);
+  sprintf(b, "%s  %.0f V", lang.label_voltage, data.powerVoltage);
   text(570, py, b, (data.powerVoltage < 220 || data.powerVoltage > 240) ? RED : BLACK);
   py += 18;
 
-  sprintf(b, "Frekv.   %.2f Hz", data.powerFrequency);
+  sprintf(b, "%s   %.2f Hz", lang.label_frequency, data.powerFrequency);
   text(570, py, b, (data.powerFrequency < 48 || data.powerFrequency > 52) ? RED : BLACK);
   py += 18;
 
-  sprintf(b, "PF       %.2f", data.powerFactor);
+  sprintf(b, "%s       %.2f", lang.label_power_factor, data.powerFactor);
   text(570, py, b, (data.powerFactor < 70) ? RED : BLACK);
   py += 18;
 
-  sprintf(b, "Patēriņš %.1f kWh", data.powerMonth);
+  sprintf(b, "%s %.1f kWh", lang.label_consumption, data.powerMonth);
   text(570, py, b, (data.powerMonth > 320) ? RED : BLACK);
 
   EPD_init();

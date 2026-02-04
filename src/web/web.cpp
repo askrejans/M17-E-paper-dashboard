@@ -68,6 +68,35 @@ void setupWebServer(AsyncWebServer& server)
               logKVf("Wind", data.outWind, "km/h");
               logKVf("Gust", data.outGust, "km/h");
 
+              /* FORECAST */
+              logTitle("FORECAST");
+
+              if (!d["forecast"].isNull() && d["forecast"].is<JsonArray>())
+              {
+                JsonArray forecastArray = d["forecast"].as<JsonArray>();
+                
+                for (int i = 0; i < 5 && i < forecastArray.size(); i++)
+                {
+                  strcpy(data.forecast[i].condition, forecastArray[i]["condition"] | "unknown");
+                  data.forecast[i].tempLow = jf(forecastArray[i]["temp_low"]);
+                  data.forecast[i].tempHigh = jf(forecastArray[i]["temp_high"]);
+                  data.forecast[i].precipitation = jf(forecastArray[i]["precipitation"]);
+
+                  char label[16];
+                  sprintf(label, "D+%d", i + 1);
+                  Serial.printf(" %-18s: %-15s  %.1f - %.1f°C  %.1fmm\n",
+                                label,
+                                data.forecast[i].condition,
+                                data.forecast[i].tempLow,
+                                data.forecast[i].tempHigh,
+                                data.forecast[i].precipitation);
+                }
+              }
+              else
+              {
+                Serial.println(" [!] Forecast array not found or invalid");
+              }
+
               /* ROOMS */
               logTitle("ROOMS");
 
