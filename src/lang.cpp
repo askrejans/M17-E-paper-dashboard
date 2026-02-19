@@ -3,6 +3,11 @@
 
 Translations lang;
 
+// Latvian weekday abbreviations: Sv P O T C P Se
+static const char* LV_weekdays[] = {"Sv", "P", "O", "T", "C", "P", "Se"};
+// English weekday abbreviations: Sun Mon Tue Wed Thu Fri Sat
+static const char* EN_weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
 // Latvian translations
 const Translations LV = {
   // Box titles
@@ -141,11 +146,14 @@ void initLanguage()
   #ifdef LANGUAGE
     if (strcmp(LANGUAGE, "EN") == 0) {
       lang = EN;
+      lang.weekdays = EN_weekdays;
     } else {
       lang = LV;
+      lang.weekdays = LV_weekdays;
     }
   #else
     lang = LV; // Default
+    lang.weekdays = LV_weekdays;
   #endif
 }
 

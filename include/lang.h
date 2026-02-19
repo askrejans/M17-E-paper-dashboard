@@ -68,6 +68,7 @@ struct Translations
   // Header
   const char* header_updated;
   const char* house_name;
+  const char **weekdays; // Array of 7 weekday abbreviations
 };
 
 extern Translations lang;

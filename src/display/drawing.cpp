@@ -5,7 +5,45 @@
 #include "data.h"
 #include "utils/utils.h"
 #include "icons.h"
+
 #include "lang.h"
+#include <time.h>
+#include <string.h>
+
+
+// Helper: Get weekday abbreviation for forecast days using lang translations and base date from JSON
+const char* getForecastWeekdayAbbr(int offset)
+{
+  // Parse base date from data.date (format: YYYY-MM-DD or DD.MM.YYYY)
+  struct tm tm_base;
+  memset(&tm_base, 0, sizeof(tm_base));
+  int year = 0, month = 0, day = 0;
+  if (strchr(data.date, '-')) {
+    // Format: YYYY-MM-DD
+    sscanf(data.date, "%d-%d-%d", &year, &month, &day);
+  } else {
+    // Format: DD.MM.YYYY
+    sscanf(data.date, "%d.%d.%d", &day, &month, &year);
+  }
+  tm_base.tm_year = year - 1900;
+  tm_base.tm_mon = month - 1;
+  tm_base.tm_mday = day;
+
+  // Add offset days
+  time_t t = mktime(&tm_base) + offset * 86400;
+  struct tm tm_result;
+  localtime_r(&t, &tm_result);
+  int wday = tm_result.tm_wday; // 0=Sunday, 1=Monday, ...
+
+  // Use lang.weekdays translation array
+  if (lang.weekdays) {
+    // Latvian: 0=Sv, 1=P, ...; English: 0=Sun, 1=Mon, ...
+    return lang.weekdays[wday];
+  }
+  // Fallback
+  static const char* fallback_days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+  return fallback_days[wday];
+}
 
 struct Utf8Map
 {
@@ -227,6 +265,8 @@ const uint8_t* getWeatherIcon(const char *state)
   return ICON_CLOUDY;
 }
 
+
+
 void draw_dashboard()
 {
   fill(WHITE);
@@ -303,20 +343,22 @@ void draw_dashboard()
   int fy = 80;
   for (int i = 0; i < 5; i++)
   {
-    sprintf(b, "D+%d", i + 1);
-    text(560, fy + 4, b, BLACK);
-    
+    // Get weekday abbreviation for forecast day
+    const char* weekday = getForecastWeekdayAbbr(i + 1); // i+1: first forecast is tomorrow
+    text(560, fy + 4, weekday, BLACK);
+
     const uint8_t* fIcon = getWeatherIcon(data.forecast[i].condition);
     icon(590, fy, fIcon, BLACK);
-    
+
     sprintf(b, "%.0f-%.0f°C %.0fmm", 
             data.forecast[i].tempLow, 
             data.forecast[i].tempHigh,
             data.forecast[i].precipitation);
     text(620, fy + 4, b, BLACK);
-    
+
     fy += 24;
   }
+
 
   rectWithTitle(280, 50, 260, 200, lang.title_indoor);
 
