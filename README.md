@@ -365,7 +365,7 @@ Room keys: `living`, `bedroom`, `kids`, `bath`, `office`
 - Colors: `00` Black, `01` White, `10` Yellow, `11` Red
 - Framebuffer: 96 KB, allocated in PSRAM when available
 - Full UTF-8 Latvian character support + graphical glyphs
-- F1-style chequered gradient effects for section headers
+- Chequered gradient effects for section headers
 
 ### Redraw Speed
 
