@@ -4,6 +4,9 @@ ESP32-powered 4-color e-paper home dashboard (800x480 ACeP) with Home Assistant 
 
 Displays weather, indoor climate, family presence, network stats, electricity prices, and 5-day forecast on a 7.5" e-paper panel. Updates every 15 minutes via deep sleep cycle.
 
+![e-ink](eink.jpg) 
+
+![web](web.jpg) 
 ---
 
 ## Hardware
