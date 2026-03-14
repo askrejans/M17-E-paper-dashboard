@@ -560,8 +560,7 @@ void draw_dashboard()
   int temp_x = COL2_X + 140;  // fixed column for temperature
   int hum_x  = COL2_X + 200;  // fixed column for humidity
 
-  // Column headers: icon next to column label
-  text(lx, y, "Room", BLACK);
+  // Column headers
   text(temp_x, y, G_THERMO " Temp", BLACK);
   text(hum_x, y, G_DROP " Hum", BLACK);
   y += 18;
