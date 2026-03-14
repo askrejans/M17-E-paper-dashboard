@@ -24,5 +24,8 @@
 #ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD ""
 #endif
+#ifndef DATE_FORMAT
+#define DATE_FORMAT "DD.MM.YYYY"
+#endif
 
 #endif

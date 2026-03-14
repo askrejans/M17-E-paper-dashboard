@@ -71,7 +71,18 @@ const Translations LV = {
   
   // Header
   .header_updated = "atjaunots @",
-  .house_name = "M17"
+  .house_name = "M17",
+
+  // Web dashboard labels
+  .web_weather = "Laikapstākļi",
+  .web_rooms = "Telpas",
+  .web_network = "Tīkls",
+  .web_electricity = "Elektrība",
+  .web_system = "ESP32",
+  .web_updated_ago = "atjaunots pirms",
+  .web_state = "Stāvoklis",
+  .web_upload = "Augšupielāde",
+  .web_monthly = "Mēnesī",
 };
 
 // English translations
@@ -137,23 +148,34 @@ const Translations EN = {
   
   // Header
   .header_updated = "updated @",
-  .house_name = "M17"
+  .house_name = "M17",
+
+  // Web dashboard labels
+  .web_weather = "Weather",
+  .web_rooms = "Rooms",
+  .web_network = "Network",
+  .web_electricity = "Electricity",
+  .web_system = "ESP32",
+  .web_updated_ago = "updated",
+  .web_state = "State",
+  .web_upload = "Upload",
+  .web_monthly = "Monthly",
 };
 
 void initLanguage()
 {
-  // Default to Latvian, check secrets.h for LANGUAGE setting
+  // Default to English, check secrets.h for LANGUAGE setting
   #ifdef LANGUAGE
-    if (strcmp(LANGUAGE, "EN") == 0) {
-      lang = EN;
-      lang.weekdays = EN_weekdays;
-    } else {
+    if (strcmp(LANGUAGE, "LV") == 0) {
       lang = LV;
       lang.weekdays = LV_weekdays;
+    } else {
+      lang = EN;
+      lang.weekdays = EN_weekdays;
     }
   #else
-    lang = LV; // Default
-    lang.weekdays = LV_weekdays;
+    lang = EN; // Default
+    lang.weekdays = EN_weekdays;
   #endif
 }
 

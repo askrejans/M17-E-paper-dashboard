@@ -37,11 +37,13 @@ def generate_secrets(source=None, target=None, env=None):
     ssid = os.environ.get("SSID", "")
     password = os.environ.get("PASSWORD", "")
     language = os.environ.get("LANGUAGE", "")
+    date_format = os.environ.get("DATE_FORMAT", "")
 
     file_values = read_env_file(env_path)
     ssid = ssid or file_values.get("SSID", "")
     password = password or file_values.get("PASSWORD", "")
-    language = language or file_values.get("LANGUAGE", "LV")
+    language = language or file_values.get("LANGUAGE", "EN")
+    date_format = date_format or file_values.get("DATE_FORMAT", "DD.MM.YYYY")
 
     include_dir = join(root, "include")
     os.makedirs(include_dir, exist_ok=True)
@@ -52,7 +54,8 @@ def generate_secrets(source=None, target=None, env=None):
         fh.write("#pragma once\n")
         fh.write(f'#define WIFI_SSID "{ssid}"\n')
         fh.write(f'#define WIFI_PASSWORD "{password}"\n')
-        fh.write(f"#define LANGUAGE \"{language}\"\n")
+        fh.write(f'#define LANGUAGE "{language}"\n')
+        fh.write(f'#define DATE_FORMAT "{date_format}"\n')
     print("[generate_secrets] Wrote:", secrets_path)
 
 

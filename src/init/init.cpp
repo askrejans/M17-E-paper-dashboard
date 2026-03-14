@@ -4,7 +4,7 @@
 #include <SPI.h>
 #include <esp_heap_caps.h>
 #include <esp_system.h>
-#include "display/epd_display.h"
+#include "display/epd_driver.h"
 #include "display/epd_spi.h"
 #include "font_8x16.h"
 #include "utils/utils.h"
@@ -46,16 +46,34 @@ void initHardware()
   digitalWrite(EPD_W21_RST_PIN, HIGH);
 }
 
-void initWiFi(const char* ssid, const char* password)
+bool initWiFi(const char* ssid, const char* password)
 {
+  if (!ssid || strlen(ssid) == 0)
+  {
+    Serial.println(" WiFi              : SSID missing! Create .env from .env.example");
+    return false;
+  }
+
   WiFi.begin(ssid, password);
   Serial.print(" WiFi              : connecting");
+
+  const int WIFI_TIMEOUT_MS = 15000;
+  unsigned long start = millis();
   while (WiFi.status() != WL_CONNECTED)
   {
+    if (millis() - start > WIFI_TIMEOUT_MS)
+    {
+      Serial.println(" TIMEOUT");
+      Serial.println(" WiFi              : connection failed");
+      return false;
+    }
     delay(300);
     Serial.print(".");
   }
   Serial.println(" OK");
-  Serial.print(" IP                : ");
-  Serial.println(WiFi.localIP());
+  Serial.printf(" SSID              : %s\n", WiFi.SSID().c_str());
+  Serial.printf(" IP                : %s\n", WiFi.localIP().toString().c_str());
+  Serial.printf(" RSSI              : %d dBm\n", WiFi.RSSI());
+  Serial.printf(" Channel           : %d\n", WiFi.channel());
+  return true;
 }

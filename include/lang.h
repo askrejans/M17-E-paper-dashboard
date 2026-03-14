@@ -69,6 +69,17 @@ struct Translations
   const char* header_updated;
   const char* house_name;
   const char **weekdays; // Array of 7 weekday abbreviations
+
+  // Web dashboard labels
+  const char* web_weather;
+  const char* web_rooms;
+  const char* web_network;
+  const char* web_electricity;
+  const char* web_system;
+  const char* web_updated_ago;
+  const char* web_state;
+  const char* web_upload;
+  const char* web_monthly;
 };
 
 extern Translations lang;
