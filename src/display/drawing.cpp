@@ -569,9 +569,9 @@ void draw_dashboard()
   // Helper macro: render room row with fixed columns, icons next to values
   #define ROOM_ROW(room_name, t, h_val, alert) do { \
     text(lx, y, room_name, alert ? RED : BLACK); \
-    sprintf(b, G_THERMO "%.1f\xC2\xB0", t); \
+    sprintf(b, "%.1f\xC2\xB0", t); \
     text(temp_x, y, b, alert ? RED : BLACK); \
-    sprintf(b, G_DROP "%.0f%%", h_val); \
+    sprintf(b, "%.0f%%", h_val); \
     text(hum_x, y, b, alert ? RED : BLACK); \
     y += 17; hline(COL2_X + 8, y, COL_W - 16, YELLOW); y += 3; \
   } while(0)
@@ -583,9 +583,9 @@ void draw_dashboard()
 
   // Last row without separator
   text(lx, y, lang.room_office, (badTemp(data.ofT) || badHum(data.ofH)) ? RED : BLACK);
-  sprintf(b, G_THERMO "%.1f\xC2\xB0", data.ofT);
+  sprintf(b, "%.1f\xC2\xB0", data.ofT);
   text(temp_x, y, b, (badTemp(data.ofT) || badHum(data.ofH)) ? RED : BLACK);
-  sprintf(b, G_DROP "%.0f%%", data.ofH);
+  sprintf(b, "%.0f%%", data.ofH);
   text(hum_x, y, b, (badTemp(data.ofT) || badHum(data.ofH)) ? RED : BLACK);
 
   #undef ROOM_ROW
