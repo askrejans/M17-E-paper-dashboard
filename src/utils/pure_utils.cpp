@@ -1,9 +1,10 @@
 #include "utils/utils.h"
+#include "config.h"
 #include <string.h>
 #include <stdio.h>
 
-bool badTemp(float t) { return t < 19 || t > 25; }
-bool badHum(float h) { return h < 35 || h > 60; }
+bool badTemp(float t) { return t < ALERT_INDOOR_TEMP_LOW || t > ALERT_INDOOR_TEMP_HIGH; }
+bool badHum(float h) { return h < ALERT_INDOOR_HUM_LOW || h > ALERT_INDOOR_HUM_HIGH; }
 
 // Parse any common date format into day/month/year components
 static bool parseDate(const char *input, int &day, int &month, int &year)

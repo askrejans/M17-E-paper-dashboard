@@ -27,8 +27,13 @@ void initHardware()
   fb = (unsigned char *)heap_caps_malloc(ALLSCREEN_BYTES, MALLOC_CAP_SPIRAM);
   if (!fb)
   {
-    Serial.println(" [MEM] PSRAM failed → using heap");
+    Serial.println(" [MEM] PSRAM failed -> using heap");
     fb = (unsigned char *)malloc(ALLSCREEN_BYTES);
+  }
+  if (!fb)
+  {
+    Serial.println(" [MEM] FATAL: framebuffer allocation failed!");
+    return;
   }
 
   font8x16_init();

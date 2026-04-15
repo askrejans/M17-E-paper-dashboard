@@ -31,7 +31,6 @@ RTC_DATA_ATTR uint32_t wake_count = 0;
 unsigned long awake_since_ms = 0;
 
 volatile bool update_received = false;
-volatile bool sleep_after_draw = false;
 
 DashboardData data;
 volatile bool redraw_requested = false;
@@ -91,6 +90,13 @@ void loop()
     redraw_requested = false;
 
     Serial.println("[DRAW] Updating display");
+    data.wifiRssi    = WiFi.RSSI();
+    data.wifiChannel = WiFi.channel();
+    strlcpy(data.ip, WiFi.localIP().toString().c_str(), sizeof(data.ip));
+    data.heapFree    = ESP.getFreeHeap();
+    data.psramFree   = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    data.uptime      = millis() / 1000;
+    data.wakeCount   = wake_count;
     draw_dashboard();
 
     if (update_received)

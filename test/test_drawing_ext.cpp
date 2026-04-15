@@ -122,16 +122,17 @@ void test_layout_columns_equal_width(void) {
 }
 
 void test_layout_rows_fit_display(void) {
-    const int HDR_H = 48;
+    const int HDR_H = 40;
     const int ROW1_Y = HDR_H + 6;
-    const int ROW1_H = 200;
-    const int ROW2_Y = ROW1_Y + ROW1_H + 8;
-    const int ROW2_H = 200;
+    const int ROW1_H = 190;
+    const int ROW2_Y = ROW1_Y + ROW1_H + 6;
+    const int ROW2_H = 190;
+    const int SYS_BAR_H = 22;
 
-    // Both rows should fit in 480px height
-    TEST_ASSERT_TRUE(ROW2_Y + ROW2_H <= 480);
-    TEST_ASSERT_EQUAL(54, ROW1_Y);
-    TEST_ASSERT_EQUAL(262, ROW2_Y);
+    // Both rows + system bar should fit in display height
+    TEST_ASSERT_TRUE(ROW2_Y + ROW2_H + SYS_BAR_H <= EPD_HEIGHT);
+    TEST_ASSERT_EQUAL(46, ROW1_Y);
+    TEST_ASSERT_EQUAL(242, ROW2_Y);
 }
 
 // --- Pixel boundary tests ---

@@ -82,7 +82,7 @@ void setupWebServer(AsyncWebServer& server)
               {
                 JsonArray forecastArray = d["forecast"].as<JsonArray>();
 
-                for (int i = 0; i < 5 && i < forecastArray.size(); i++)
+                for (int i = 0; i < MAX_FORECAST && i < (int)forecastArray.size(); i++)
                 {
                   strlcpy(data.forecast[i].condition, forecastArray[i]["condition"] | "unknown", sizeof(data.forecast[i].condition));
                   data.forecast[i].tempLow = jf(forecastArray[i]["temp_low"]);
@@ -90,7 +90,7 @@ void setupWebServer(AsyncWebServer& server)
                   data.forecast[i].precipitation = jf(forecastArray[i]["precipitation"]);
 
                   char label[16];
-                  sprintf(label, "D+%d", i + 1);
+                  snprintf(label, sizeof(label), "D+%d", i + 1);
                   Serial.printf(" %-18s: %-15s  %.1f - %.1f°C  %.1fmm\n",
                                 label,
                                 data.forecast[i].condition,
@@ -158,7 +158,7 @@ void setupWebServer(AsyncWebServer& server)
               /* FAMILY */
               logTitle(lang.title_location);
 
-              for (int i = 0; i < 4; i++)
+              for (int i = 0; i < MAX_FAMILY; i++)
               {
                 strlcpy(data.family[i].name, d["family"][i]["name"] | "?", sizeof(data.family[i].name));
                 strlcpy(data.family[i].state, d["family"][i]["state"] | "?", sizeof(data.family[i].state));
@@ -274,7 +274,7 @@ void setupWebServer(AsyncWebServer& server)
   h += "</h2>";
 
   h += "<div class='big";
-  if (data.outTemp < -10 || data.outTemp > 30) h += " bad";
+  if (data.outTemp < ALERT_OUTDOOR_TEMP_LOW || data.outTemp > ALERT_OUTDOOR_TEMP_HIGH) h += " bad";
   h += "'>";
   h += String(data.outTemp,1);
   h += "<span class='unit'> °C</span></div>";
@@ -286,8 +286,8 @@ void setupWebServer(AsyncWebServer& server)
 
   row(lang.label_humidity); val(data.outHum, "%.0f", "%", false);
   row(lang.label_pressure); val(data.outPress, "%.0f", "hPa", false);
-  row(lang.label_wind); val(data.outWind, "%.1f", "km/h", data.outWind > 20);
-  row(lang.label_gusts); val(data.outGust, "%.1f", "km/h", data.outGust > 25);
+  row(lang.label_wind); val(data.outWind, "%.1f", "km/h", data.outWind > ALERT_WIND_HIGH);
+  row(lang.label_gusts); val(data.outGust, "%.1f", "km/h", data.outGust > ALERT_GUST_HIGH);
   row(lang.label_clouds); val(data.clouds, "%.0f", "%", false);
 
   h += "</div>";
@@ -317,7 +317,7 @@ void setupWebServer(AsyncWebServer& server)
   h += "<div class='card'><h2>📅 ";
   h += lang.title_forecast;
   h += "</h2>";
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < MAX_FORECAST; i++) {
     h += "<div class='row'><span class='label'><strong style='color:#c4b5fd'>";
     h += getForecastWeekdayAbbr(i + 1);
     h += "</strong> <span style='color:#635d80'>";
@@ -336,7 +336,7 @@ void setupWebServer(AsyncWebServer& server)
   h += "<div class='card'><h2>📍 ";
   h += lang.title_location;
   h += "</h2>";
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < MAX_FAMILY; i++) {
     bool home = strcmp(data.family[i].state, "home") == 0;
     h += "<div class='row'><span class='label'>";
     h += data.family[i].name;
@@ -353,13 +353,13 @@ void setupWebServer(AsyncWebServer& server)
   h += lang.title_network;
   h += "</h2>";
   h += "<div class='big";
-  if (data.down < 10) h += " bad";
+  if (data.down < ALERT_DOWN_LOW) h += " bad";
   h += "'>";
   h += String(data.down,1);
   h += "<span class='unit'> Mbps</span></div>";
 
-  row(lang.web_upload); val(data.up, "%.1f", "Mbps", data.up < 5);
-  row(lang.label_ping); val(data.ping, "%.0f", "ms", data.ping > 50);
+  row(lang.web_upload); val(data.up, "%.1f", "Mbps", data.up < ALERT_UP_LOW);
+  row(lang.label_ping); val(data.ping, "%.0f", "ms", data.ping > ALERT_PING_HIGH);
   h += "</div>";
 
   /* BOX 6: ELECTRICITY */
@@ -368,18 +368,18 @@ void setupWebServer(AsyncWebServer& server)
   h += "</h2>";
 
   h += "<div class='big";
-  if (data.powerTotal > 5000) h += " bad";
+  if (data.powerTotal > ALERT_POWER_HIGH) h += " bad";
   h += "'>";
   h += String(data.powerTotal,0);
   h += "<span class='unit'> W</span></div>";
 
-  row(lang.label_price); val(data.powerPrice, "%.2f", "€/MWh", data.powerPrice > 20);
-  row(lang.label_voltage); val(data.powerVoltage, "%.0f", "V", data.powerVoltage < 220 || data.powerVoltage > 240);
-  row(lang.label_frequency); val(data.powerFrequency, "%.2f", "Hz", data.powerFrequency < 48 || data.powerFrequency > 52);
+  row(lang.label_price); val(data.powerPrice, "%.2f", "€/MWh", data.powerPrice > ALERT_PRICE_HIGH);
+  row(lang.label_voltage); val(data.powerVoltage, "%.0f", "V", data.powerVoltage < ALERT_VOLTAGE_LOW || data.powerVoltage > ALERT_VOLTAGE_HIGH);
+  row(lang.label_frequency); val(data.powerFrequency, "%.2f", "Hz", data.powerFrequency < ALERT_FREQ_LOW || data.powerFrequency > ALERT_FREQ_HIGH);
 
   row("cosφ");
   h += "<span class='value";
-  if (data.powerFactor < 70) h += " bad";
+  if (data.powerFactor < ALERT_PF_LOW) h += " bad";
   h += "'>";
   h += String(data.powerFactor,2);
   h += "</span></div>";
@@ -436,7 +436,7 @@ void setupWebServer(AsyncWebServer& server)
   h += "</span></div>";
 
   h += "<div class='row'><span class='label'>RSSI</span><span class='value";
-  if (WiFi.RSSI() < -75) h += " bad";
+  if (WiFi.RSSI() < ALERT_RSSI_LOW) h += " bad";
   h += "'>";
   h += String(WiFi.RSSI());
   h += " dBm</span></div>";

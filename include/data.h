@@ -2,6 +2,7 @@
 #define DATA_H
 
 #include <Arduino.h>
+#include "config.h"
 
 enum
 {
@@ -36,8 +37,17 @@ struct DashboardData
   float down, up, ping;
   float powerPrice, powerTotal, powerVoltage, powerFrequency, powerFactor, powerMonth;
 
-  Person family[4];
-  ForecastDay forecast[5];  // 5-day forecast
+  Person family[MAX_FAMILY];
+  ForecastDay forecast[MAX_FORECAST];
+
+  // System stats (populated at draw time)
+  int32_t wifiRssi;
+  uint8_t wifiChannel;
+  char ip[16];
+  uint32_t heapFree;
+  uint32_t psramFree;
+  uint32_t uptime;
+  uint32_t wakeCount;
 };
 
 extern DashboardData data;

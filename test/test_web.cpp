@@ -21,8 +21,8 @@ void test_web_json_parsing(void) {
 
     // Apply parsing logic (same as in web handler)
     extern DashboardData data;
-    strcpy(data.date, d["date"] | "--");
-    strcpy(data.time, d["time"] | "--");
+    strlcpy(data.date, d["date"] | "--", sizeof(data.date));
+    strlcpy(data.time, d["time"] | "--", sizeof(data.time));
 
     data.outTemp = jf(d["weather"]["temp"]);
     data.outHum = jf(d["weather"]["humidity"]);
@@ -33,8 +33,8 @@ void test_web_json_parsing(void) {
     data.down = jf(d["internet"]["down"]);
     data.powerPrice = jf(d["power"]["price"]);
 
-    strcpy(data.family[0].name, d["family"][0]["name"] | "?");
-    strcpy(data.family[0].state, d["family"][0]["state"] | "?");
+    strlcpy(data.family[0].name, d["family"][0]["name"] | "?", sizeof(data.family[0].name));
+    strlcpy(data.family[0].state, d["family"][0]["state"] | "?", sizeof(data.family[0].state));
 
     TEST_ASSERT_EQUAL_STRING("2026-01-25", data.date);
     TEST_ASSERT_EQUAL_FLOAT(5.5f, data.outTemp);
