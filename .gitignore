@@ -14,3 +14,8 @@ include/secrets.h
 
 # OS
 .DS_Store
+
+# Generated at build time
+include/generated/
+preview/
+.backup/

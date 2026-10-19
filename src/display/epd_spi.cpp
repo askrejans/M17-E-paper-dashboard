@@ -1,10 +1,22 @@
 #include "display/epd_spi.h"
 #include <SPI.h>
 
-//SPI write byte
+// SPI write byte (the bus is configured once in EPD_spiBegin)
 void SPI_Write(unsigned char value)
-{				   			 
-   SPI.transfer(value);
+{
+  SPI.transfer(value);
+}
+
+void EPD_spiBegin(void)
+{
+  SPI.begin(EPD_W21_CLK_PIN, -1, EPD_W21_MOSI_PIN, -1);
+  SPI.setFrequency(EPD_SPI_HZ);
+  pinMode(EPD_W21_BUSY_PIN, INPUT);
+  pinMode(EPD_W21_RST_PIN, OUTPUT);
+  pinMode(EPD_W21_DC_PIN, OUTPUT);
+  pinMode(EPD_W21_CS_PIN, OUTPUT);
+  digitalWrite(EPD_W21_CS_PIN, HIGH);
+  digitalWrite(EPD_W21_RST_PIN, HIGH);
 }
 
 //SPI write command

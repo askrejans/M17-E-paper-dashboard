@@ -1,0 +1,151 @@
+# M17 E-Paper Dashboard — Home Assistant package for PUSH mode
+#
+# Pull mode (device fetches from HA with a long-lived token) needs nothing in
+# Home Assistant and is the recommended setup. Use this package only if the
+# device must not hold a token, or HA cannot be reached from the device.
+#
+# Install:
+#   1. configuration.yaml:   homeassistant:
+#                              packages: !include_dir_named packages
+#   2. Copy this file to config/packages/m17_epaper.yaml
+#   3. Edit the three values marked  # <-- EDIT  and the entity ids in
+#      script.m17_epaper_push -> variables (anything left empty is skipped;
+#      people, calendars and house status are discovered automatically)
+#   4. Restart Home Assistant. Change the interval from the dashboard helper
+#      "M17 e-paper interval" and set the same value in the device admin panel
+#      (Network & power -> Update every).
+
+input_number:
+  m17_epaper_interval:
+    name: M17 e-paper interval
+    icon: mdi:timer-outline
+    min: 1
+    max: 120
+    step: 1
+    unit_of_measurement: min
+    mode: box
+
+rest_command:
+  m17_epaper_update:
+    url: "http://192.168.1.50/update"          # <-- EDIT: device IP
+    method: POST
+    content_type: "application/json"
+    # Only needed when a push token is set in the admin panel:
+    # headers:
+    #   Authorization: "Bearer YOUR_PUSH_TOKEN"  # <-- EDIT (optional)
+    timeout: 20
+    payload: "{{ payload }}"
+
+automation:
+  - id: m17_epaper_push_schedule
+    alias: "M17 e-paper: push on schedule"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/1"
+    conditions:
+      - condition: template
+        value_template: >
+          {% set iv = states('input_number.m17_epaper_interval') | int(15) %}
+          {{ (now().hour * 60 + now().minute) % (iv if iv > 0 else 15) == 0 }}
+    actions:
+      - action: script.m17_epaper_push
+
+script:
+  m17_epaper_push:
+    alias: "M17 e-paper: push now"
+    mode: queued
+    sequence:
+      - variables:
+          weather_entity: weather.home                     # <-- EDIT
+          outdoor_temp: ""                                 # optional sensor, overrides weather
+          outdoor_humidity: ""
+          rooms:                                           # name, temperature sensor, humidity sensor
+            - [Living Room, sensor.livingroom_temperature, sensor.livingroom_humidity]
+            - [Bedroom, sensor.bedroom_temperature, sensor.bedroom_humidity]
+          internet: [sensor.speedtest_download, sensor.speedtest_upload, sensor.speedtest_ping]
+          price: sensor.nordpool_kwh_lv
+          price_series_attr: today                         # Nord Pool hourly/15-min list
+          power: ""                                        # W
+          voltage: ""
+          frequency: ""
+          power_factor: ""
+          energy_today: ""                                 # kWh
+          energy_month: ""                                 # kWh
+          extras: []                                       # [[Label, sensor.id], ...]
+          message: ""                                      # input_text / sensor
+          thermostat: ""                                   # climate.*; empty = first climate entity
+      - action: weather.get_forecasts
+        target:
+          entity_id: "{{ weather_entity }}"
+        data:
+          type: daily
+        response_variable: daily
+        continue_on_error: true
+      - action: weather.get_forecasts
+        target:
+          entity_id: "{{ weather_entity }}"
+        data:
+          type: hourly
+        response_variable: hourly
+        continue_on_error: true
+      - action: rest_command.m17_epaper_update
+        data:
+          payload: >
+            {%- macro num(e, attr=none) -%}
+            {%- if not e -%}null{%- elif attr -%}{{ state_attr(e, attr) | float(none) | to_json }}
+            {%- else -%}{{ states(e) | float(none) | to_json }}{%- endif -%}
+            {%- endmacro -%}
+            {%- set W = weather_entity -%}
+            {%- set today = now().strftime('%Y-%m-%d') -%}
+            {%- set fc = ((daily or {})[W] or {}).get('forecast', []) | rejectattr('datetime', 'search', '^' ~ today) | list -%}
+            {%- set hr = ((hourly or {})[W] or {}).get('forecast', []) -%}
+            {%- set p = (state_attr(price, price_series_attr) or []) | select('number') | list if price else [] -%}
+            {%- set step = ((p | length) / 24) | round(0, 'ceil') | int if (p | length) > 24 else 1 -%}
+            {%- set op = states.binary_sensor | selectattr('state', 'eq', 'on') | selectattr('attributes.device_class', 'defined')
+                 | selectattr('attributes.device_class', 'in', ['door', 'window', 'garage_door', 'opening']) | list -%}
+            {%- set lb = namespace(n=[]) -%}
+            {%- for b in states.sensor | selectattr('attributes.device_class', 'defined') | selectattr('attributes.device_class', 'eq', 'battery') -%}
+              {%- if b.state | is_number and b.state | float < 20 %}{% set lb.n = lb.n + [b.name] %}{% endif -%}
+            {%- endfor -%}
+            {%- set mp = states.media_player | selectattr('state', 'eq', 'playing') | list -%}
+            {%- set ev = namespace(l=[]) -%}
+            {%- for c in states.calendar -%}
+              {%- if state_attr(c.entity_id, 'start_time') and state_attr(c.entity_id, 'message') -%}
+                {%- set ev.l = ev.l + [{'s': state_attr(c.entity_id, 'start_time'), 'm': state_attr(c.entity_id, 'message'), 'a': state_attr(c.entity_id, 'all_day')}] -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {
+              "date": "{{ today }}", "time": "{{ now().strftime('%H:%M') }}", "epoch": {{ now().timestamp() | int }},
+              "weather": {
+                "state": {{ states(W) | to_json }},
+                "temp": {{ num(outdoor_temp) if outdoor_temp else num(W, 'temperature') }},
+                "humidity": {{ num(outdoor_humidity) if outdoor_humidity else num(W, 'humidity') }},
+                "pressure": {{ num(W, 'pressure') }}, "clouds": {{ num(W, 'cloud_coverage') }},
+                "wind": {{ num(W, 'wind_speed') }}, "gust": {{ num(W, 'wind_gust_speed') }}
+              },
+              "rooms": [{% for r in rooms %}{"name": {{ r[0] | to_json }}, "temp": {{ num(r[1]) }}, "hum": {{ num(r[2] if r | length > 2 else '') }}}{{ ',' if not loop.last }}{% endfor %}],
+              "family": [{% for s in states.person | sort(attribute='name') %}{"name": {{ s.name.split(' ')[0] | to_json }}, "state": {{ s.state | to_json }}}{{ ',' if not loop.last }}{% endfor %}],
+              "forecast": [{% for f in fc[:7] %}{"condition": {{ f.condition | to_json }}, "temp_high": {{ f.temperature | float(none) | to_json }}, "temp_low": {{ f.templow | float(none) | to_json }}, "precipitation": {{ f.precipitation | float(none) | to_json }}}{{ ',' if not loop.last }}{% endfor %}],
+              "hourly": {"start_hour": {{ (hr[0].datetime | as_datetime | as_local).hour if hr else -1 }},
+                         "temp": {{ hr[:24] | map(attribute='temperature') | list | to_json }},
+                         "precip": {{ hr[:24] | map(attribute='precipitation', default=0) | list | to_json }}},
+              "internet": {"down": {{ num(internet[0]) }}, "up": {{ num(internet[1]) }}, "ping": {{ num(internet[2]) }}},
+              "power": {"price": {{ num(price) }}, "total_power": {{ num(power) }}, "voltage": {{ num(voltage) }},
+                        "frequency": {{ num(frequency) }}, "power_factor": {{ num(power_factor) }},
+                        "today_consumption": {{ num(energy_today) }}, "monthly_consumption": {{ num(energy_month) }}},
+              "prices": {"now": {{ (now().hour if step > 1 else (now().hour * (p | length) // 24)) if p else 0 }},
+                         "values": [{% for i in range(0, p | length, step) %}{{ ((p[i:i + step] | sum) / (p[i:i + step] | length)) | round(4) }}{{ ',' if not loop.last }}{% endfor %}]},
+              "extras": [{% for e in extras %}{"label": {{ e[0] | to_json }}, "value": {{ states(e[1]) | to_json }}, "unit": {{ (state_attr(e[1], 'unit_of_measurement') or '') | to_json }}}{{ ',' if not loop.last }}{% endfor %}],
+              "events": [{% for e in (ev.l | sort(attribute='s'))[:5] %}{% set d = as_datetime(e.s) %}{"when": {{ (('' if d.date() == now().date() else d.strftime('%a ')) ~ ('' if e.a else d.strftime('%H:%M'))) | trim | to_json }}, "title": {{ e.m | to_json }}}{{ ',' if not loop.last }}{% endfor %}],
+              "house": {"lights_on": {{ states.light | selectattr('state', 'eq', 'on') | list | count }},
+                        "open_count": {{ op | count }}, "open": {{ op | map(attribute='name') | list | to_json }},
+                        "low_battery_count": {{ lb.n | count }}, "low_battery": {{ lb.n | to_json }},
+                        "updates": {{ states.update | selectattr('state', 'eq', 'on') | list | count }},
+                        "media": {{ ((((mp[0].attributes.media_artist ~ ' - ') if mp[0].attributes.media_artist else '') ~ (mp[0].attributes.media_title or mp[0].name)) if mp else '') | to_json }}},
+              "sun": {"rise": "{{ as_local(as_datetime(state_attr('sun.sun', 'next_rising'))).strftime('%H:%M') if state_attr('sun.sun', 'next_rising') else '' }}",
+                      "set": "{{ as_local(as_datetime(state_attr('sun.sun', 'next_setting'))).strftime('%H:%M') if state_attr('sun.sun', 'next_setting') else '' }}"},
+              {%- set th = thermostat or (states.climate | map(attribute='entity_id') | list + [''])[0] %}
+              "thermostat": {% if th %}{"name": {{ (state_attr(th, 'friendly_name') or '') | to_json }}, "target": {{ state_attr(th, 'temperature') | float(none) | to_json }}, "current": {{ state_attr(th, 'current_temperature') | float(none) | to_json }}, "mode": {{ states(th) | to_json }}, "action": {{ (state_attr(th, 'hvac_action') or '') | to_json }}}{% else %}null{% endif %},
+              "message": {{ (states(message) if message else '') | to_json }}
+            }

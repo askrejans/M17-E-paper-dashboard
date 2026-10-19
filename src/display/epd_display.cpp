@@ -1,7 +1,11 @@
 #include "display/epd_spi.h"
 #include "display/epd_display.h"
+#include <SPI.h>
 
-static void EPD_init_common(void)
+// Init sequence from GoodDisplay / GxEPD2. The fast waveform (spec: ~12 s
+// instead of ~22 s) is selected by forcing the LUT temperature (E0/E6/A5)
+// *before* the booster is powered on with 0x04.
+static void EPD_init_common(bool fast)
 {
   delay(100);
   EPD_W21_RST_0;
@@ -64,30 +68,30 @@ static void EPD_init_common(void)
   EPD_W21_WriteCMD(0x30);
   EPD_W21_WriteDATA(0x08);
 
-  EPD_W21_WriteCMD(0x04);
+  if (fast)
+  {
+    EPD_W21_WriteCMD(0xE0); // cascade setting: use forced temperature
+    EPD_W21_WriteDATA(0x02);
+    EPD_W21_WriteCMD(0xE6); // forced temperature value -> fast LUT
+    EPD_W21_WriteDATA(0x5A);
+    EPD_W21_WriteCMD(0xA5); // load LUT for that temperature
+    EPD_W21_WriteDATA(0x00);
+    lcd_chkstatus();
+  }
+
+  EPD_W21_WriteCMD(0x04); // power on
   lcd_chkstatus();
 }
 
 void EPD_init(void)
 {
-  EPD_init_common();
+  EPD_init_common(false);
 }
 
 void EPD_init_Fast(void)
 {
-  EPD_init_common();
-
-  EPD_W21_WriteCMD(0xE0);
-  EPD_W21_WriteDATA(0x02);
-
-  EPD_W21_WriteCMD(0xE6);
-  EPD_W21_WriteDATA(0x5A);
-
-  EPD_W21_WriteCMD(0xA5);
-  EPD_W21_WriteDATA(0x00);
-  EPD_W21_WriteDATA(0x00);
-  lcd_chkstatus();
-}	  
+  EPD_init_common(true);
+}
 
 void EPD_sleep(void)
 {   
@@ -106,62 +110,85 @@ void EPD_refresh(void)
   lcd_chkstatus();   
 }
 
-void lcd_chkstatus(void)
-{ 
-  while(1)
-  {  //=0 BUSY
-     if(isEPD_W21_BUSY==1) break;
-     delay(1);
-  }  
+// BUSY is low while the controller works. A full ACeP refresh takes 15-25 s;
+// give up after 60 s so a disconnected panel cannot hang the firmware.
+bool lcd_chkstatus(void)
+{
+  unsigned long start = millis();
+  while (isEPD_W21_BUSY == 0)
+  {
+    if (millis() - start > 60000)
+      return false;
+    delay(2);
+  }
+  return true;
 }
 
 unsigned char Color_get(unsigned char color)
 {
-  unsigned datas;
-  switch(color)
+  switch (color)
   {
-    case 0x00:
-      datas=black;  
-      break;    
-    case 0x01:
-      datas=white;
-      break;
-    case 0x02:
-      datas=yellow;
-      break;    
-    case 0x03:
-      datas=red;
-      break;      
-    default:
-      datas=black;
-      break;      
+  case 0x01: return EPD_WHITE;
+  case 0x02: return EPD_YELLOW;
+  case 0x03: return EPD_RED;
+  default:   return EPD_BLACK;
   }
-   return datas;
 }
 
-void PIC_display(const unsigned char* picData)
+uint32_t epdLastTransferMs = 0;
+uint32_t epdLastRefreshMs = 0;
+
+static uint8_t lut[256];
+static uint32_t frameStart;
+
+// Stream pixel rows in bursts: one CS/DC frame per chunk instead of toggling
+// CS for every byte. Codes pass through a 256-entry LUT built from Color_get()
+// so drivers with a different colour encoding still work.
+void EPD_beginFrame(void)
 {
-  unsigned int i,j;
-  unsigned char temp1;
-  unsigned char data_H1,data_H2,data_L1,data_L2,data;
-   
-  EPD_W21_WriteCMD(0x10);        
-  for(i=0;i<Gate_BITS;i++)  //Source_BITS*Gate_BITS/4
-  { 
-    for(j=0;j<Source_BITS/4;j++)
-    {   
-      temp1=picData[i*Source_BITS/4+j]; 
+  static bool lutReady = false;
+  if (!lutReady)
+  {
+    for (int v = 0; v < 256; v++)
+      lut[v] = (Color_get((v >> 6) & 3) << 6) | (Color_get((v >> 4) & 3) << 4) |
+               (Color_get((v >> 2) & 3) << 2) | Color_get(v & 3);
+    lutReady = true;
+  }
+  frameStart = millis();
+  EPD_W21_WriteCMD(0x10);
+}
 
-      data_H1=Color_get(temp1>>6&0x03)<<6;      
-      data_H2=Color_get(temp1>>4&0x03)<<4;
-      data_L1=Color_get(temp1>>2&0x03)<<2;
-      data_L2=Color_get(temp1&0x03);
-      
-      data=data_H1|data_H2|data_L1|data_L2;
-      EPD_W21_WriteDATA(data);
-    }
-  } 
+void EPD_writeRows(const unsigned char *rows, unsigned count)
+{
+  uint8_t row[Source_BITS / 4];
+  EPD_W21_CS_0;
+  EPD_W21_DC_1;
+  for (unsigned i = 0; i < count; i++)
+  {
+    const unsigned char *src = rows + i * (Source_BITS / 4);
+    for (unsigned j = 0; j < sizeof(row); j++)
+      row[j] = lut[src[j]];
+    SPI.writeBytes(row, sizeof(row));
+  }
+  EPD_W21_CS_1;
+}
 
-   //Refresh
-    EPD_refresh();  
+void EPD_endFrame(void)
+{
+  epdLastTransferMs = millis() - frameStart;
+}
+
+void EPD_writeFrame(const unsigned char *picData)
+{
+  EPD_beginFrame();
+  EPD_writeRows(picData, Gate_BITS);
+  EPD_endFrame();
+}
+
+void PIC_display(const unsigned char *picData)
+{
+  EPD_writeFrame(picData);
+  uint32_t t0 = millis();
+  EPD_refresh();
+  epdLastRefreshMs = millis() - t0;
 }

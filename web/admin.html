@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#040708">
+  <title>M17 · Admin</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="brand"><span class="name vfd" id="name">M17</span><span class="sub">Admin &amp; configuration</span></div>
+    <div class="ann" id="ann"></div>
+    <div class="clock"><div class="date"><div class="dim">uptime</div><div id="up" class="amber">—</div></div><div id="clock" class="vfd"></div></div>
+  </header>
+
+  <div id="banners"></div>
+
+  <div class="admin">
+    <nav class="tabs" id="tabs">
+      <button data-tab="status" class="on">Status</button>
+      <button data-tab="display">Display</button>
+      <button data-tab="source">Data source</button>
+      <button data-tab="alerts">Alerts</button>
+      <button data-tab="network">Network &amp; power</button>
+      <button data-tab="security">Security</button>
+      <button data-tab="system">System</button>
+      <a class="hint" href="/" style="padding:8px 4px">← live dashboard</a>
+    </nav>
+
+    <div>
+      <!-- STATUS -->
+      <section class="tab on" id="tab-status">
+        <div class="panel"><span class="legend">Device</span><div class="stat" id="stat"></div></div>
+        <div class="panel"><span class="legend">Controls</span>
+          <div class="btns">
+            <button class="b primary pull-now">Pull from Home Assistant now</button>
+            <button class="b" data-action="render">Redraw panel</button>
+            <label class="sw"><input type="checkbox" id="maint"><i></i>Maintenance (stay awake)</label>
+            <button class="b warn" data-action="sleep">Sleep now</button>
+            <button class="b warn" data-action="reboot">Reboot</button>
+          </div>
+          <p class="hint pull-out"></p>
+          <p class="hint">Pull works in push mode too, as soon as an HA URL and token are set. The board's BOOT button does the same (and wakes the device from deep sleep). Maintenance keeps the device awake for up to 60 minutes so you can configure it. After a reset or power-on it also stays awake for 5 minutes; while you use this page it will not go to sleep.</p>
+        </div>
+        <div class="panel"><span class="legend">Console</span><pre class="console" id="log">…</pre>
+          <div class="btns" style="margin-top:8px"><label class="sw"><input type="checkbox" id="logAuto" checked><i></i>Auto-refresh</label></div>
+        </div>
+      </section>
+
+      <!-- DISPLAY -->
+      <section class="tab" id="tab-display">
+        <div class="panel"><span class="legend">Theme</span><div class="themes" id="themes"></div></div>
+        <div class="panel"><span class="legend">Layout · slots</span>
+          <div class="slots" id="slots"></div>
+          <p class="hint">Six slots, read left→right, top→bottom. Each theme lays them out its own way (grid, terminal panes, report columns).</p>
+        </div>
+        <div class="panel"><span class="legend">Panel preview</span>
+          <div class="preview"><img id="preview" alt="e-paper preview"></div>
+          <div class="btns" style="margin-top:10px"><button class="b" id="pvBtn">Render preview</button><span class="hint">Rendered on the device from current data, exactly as the e-paper will show it (4 colours).</span></div>
+        </div>
+        <div class="panel"><span class="legend">Text &amp; refresh</span>
+          <div class="cols">
+            <label class="f">Display name<input data-k="device.name" maxlength="23"></label>
+            <label class="f">Language<select data-k="device.language"><option value="EN">English</option><option value="LV">Latviešu</option></select></label>
+            <label class="f">Date format<select data-k="device.date_format"><option>DD.MM.YYYY</option><option>YYYY-MM-DD</option><option>MM/DD/YYYY</option><option>DD/MM/YYYY</option></select></label>
+            <label class="f">Price unit<input data-k="display.price_unit" maxlength="11"></label>
+            <label class="f">Wind unit<input data-k="display.wind_unit" maxlength="7"></label>
+            <label class="f">Refresh waveform<select data-k="display.refresh"><option value="quality">Quality (full colour)</option><option value="fast">Fast (shorter, less saturated)</option></select></label>
+          </div>
+          <div class="btns" style="margin-top:12px">
+            <label class="sw"><input type="checkbox" data-k="display.system_bar"><i></i>System bar (Classic)</label>
+            <label class="sw"><input type="checkbox" data-k="display.skip_unchanged"><i></i>Skip refresh when unchanged</label>
+          </div>
+        </div>
+        <div class="btns"><button class="b primary" data-save="device,display">Save display settings</button></div>
+      </section>
+
+      <!-- SOURCE -->
+      <section class="tab" id="tab-source">
+        <div class="panel"><span class="legend">Mode</span>
+          <div class="seg" id="srcMode"><button data-v="push">Push · HA sends</button><button data-v="pull">Pull · device fetches</button></div>
+          <p class="hint" id="srcHint"></p>
+        </div>
+        <div class="panel"><span class="legend">Home Assistant</span>
+          <div class="cols">
+            <label class="f">URL<input data-k="source.ha_url" placeholder="http://homeassistant.local:8123"></label>
+            <label class="f">Long-lived access token<input data-k="source.ha_token" type="password" autocomplete="off" placeholder="paste token"><small>HA → Profile → Security → Long-lived access tokens</small></label>
+          </div>
+          <div class="btns" style="margin-top:10px">
+            <label class="sw"><input type="checkbox" data-k="source.insecure_tls"><i></i>Accept self-signed HTTPS</label>
+            <button class="b" id="haTest">Test connection</button><span id="haTestOut" class="hint"></span>
+          </div>
+        </div>
+        <div class="panel"><span class="legend">Push endpoint</span>
+          <div class="cols"><label class="f">Push token (optional)<input data-k="source.push_token" type="password" autocomplete="off"><small>When set, POST /update must send <code>Authorization: Bearer &lt;token&gt;</code>.</small></label>
+          <div class="hint">Home Assistant posts to <code id="pushUrl"></code>. A ready-made HA package is in the repository (<code>homeassistant/m17_epaper.yaml</code>); the template below is the same mapping as pull mode.</div></div>
+        </div>
+        <div class="panel"><span class="legend">Entity mapping</span>
+          <label class="sw"><input type="checkbox" data-k="source.map.auto_discover"><i></i>Auto-discover (people, weather, calendars, house status)</label>
+          <h4 class="dim">Weather</h4>
+          <div class="cols">
+            <label class="f">Weather entity<input data-k="source.map.weather" data-dom="weather" class="ent"></label>
+            <label class="f">Outdoor temperature sensor<input data-k="source.map.out_temp" data-dom="sensor" class="ent"><small>optional, overrides the weather entity</small></label>
+            <label class="f">Outdoor humidity sensor<input data-k="source.map.out_hum" data-dom="sensor" class="ent"></label>
+            <label class="f">Sun<input data-k="source.map.sun" data-dom="sun" class="ent"></label>
+            <label class="f">Thermostat<input data-k="source.map.thermostat" data-dom="climate" class="ent"><small>climate.*; empty = first one (auto-discover)</small></label>
+          </div>
+          <h4 class="dim">Rooms <button class="b" data-add="rooms" style="padding:4px 10px">+ add</button></h4>
+          <div class="list" id="list-rooms"></div>
+          <h4 class="dim">People <button class="b" data-add="family" style="padding:4px 10px">+ add</button></h4>
+          <div class="list" id="list-family"></div>
+          <h4 class="dim">Network</h4>
+          <div class="cols">
+            <label class="f">Download<input data-k="source.map.net_down" data-dom="sensor" class="ent"></label>
+            <label class="f">Upload<input data-k="source.map.net_up" data-dom="sensor" class="ent"></label>
+            <label class="f">Ping<input data-k="source.map.net_ping" data-dom="sensor" class="ent"></label>
+          </div>
+          <h4 class="dim">Energy</h4>
+          <div class="cols">
+            <label class="f">Price<input data-k="source.map.price" data-dom="sensor" class="ent"></label>
+            <label class="f">Power (W)<input data-k="source.map.power" data-dom="sensor" class="ent"></label>
+            <label class="f">Voltage<input data-k="source.map.voltage" data-dom="sensor" class="ent"></label>
+            <label class="f">Frequency<input data-k="source.map.frequency" data-dom="sensor" class="ent"></label>
+            <label class="f">Power factor<input data-k="source.map.power_factor" data-dom="sensor" class="ent"></label>
+            <label class="f">Energy today (kWh)<input data-k="source.map.today" data-dom="sensor" class="ent"></label>
+            <label class="f">Energy this month (kWh)<input data-k="source.map.month" data-dom="sensor" class="ent"></label>
+            <label class="f">Hourly price entity<input data-k="source.map.price_series" data-dom="sensor" class="ent"><small>e.g. Nord Pool sensor</small></label>
+            <label class="f">…its attribute<input data-k="source.map.price_series_attr" placeholder="today"></label>
+          </div>
+          <h4 class="dim">Agenda</h4>
+          <div class="cols">
+            <label class="f">Calendars<input data-k="source.map.calendars" placeholder="calendar.family, calendar.work"><small>comma separated; empty = all (auto-discover)</small></label>
+            <label class="f">Message entity<input data-k="source.map.message" class="ent"><small>input_text / sensor shown as a notice line</small></label>
+          </div>
+          <h4 class="dim">Extra sensors <button class="b" data-add="extras" style="padding:4px 10px">+ add</button></h4>
+          <div class="list" id="list-extras"></div>
+          <datalist id="entities"></datalist>
+        </div>
+        <div class="btns">
+          <button class="b primary" data-save="source">Save data source</button>
+          <button class="b pull-now">Pull now</button>
+          <button class="b" id="tplTest">Test mapping</button>
+          <button class="b" id="tplShow">Show HA template</button>
+        </div>
+        <p class="hint pull-out"></p>
+        <div class="panel" id="tplPanel" style="display:none"><span class="legend">Output</span><textarea id="tplOut" readonly></textarea></div>
+      </section>
+
+      <!-- ALERTS -->
+      <section class="tab" id="tab-alerts">
+        <div class="panel"><span class="legend">Thresholds</span><div class="cols" id="th"></div>
+          <p class="hint">Values outside these limits are drawn in red on the panel and the dashboard.</p></div>
+        <div class="btns"><button class="b primary" data-save="thresholds">Save thresholds</button></div>
+      </section>
+
+      <!-- NETWORK & POWER -->
+      <section class="tab" id="tab-network">
+        <div class="panel"><span class="legend">Wi-Fi</span>
+          <div class="cols">
+            <label class="f">SSID<input data-k="wifi.ssid" list="ssids" maxlength="32"></label>
+            <label class="f">Password<input data-k="wifi.password" type="password" autocomplete="off" maxlength="64"></label>
+            <label class="f">Hostname<input data-k="device.hostname" maxlength="31"><small>reachable as http://&lt;hostname&gt;.local</small></label>
+          </div>
+          <datalist id="ssids"></datalist>
+          <div class="btns" style="margin-top:10px"><button class="b" id="scan">Scan networks</button><span class="hint" id="scanOut"></span></div>
+        </div>
+        <div class="panel"><span class="legend">Update frequency &amp; power</span>
+          <div class="seg" id="pwrMode"><button data-v="sleep">Battery · deep sleep</button><button data-v="always_on">Always on · USB</button></div>
+          <div class="cols" style="margin-top:12px">
+            <label class="f">Update every (minutes)<input data-k="power.interval_min" type="number" min="1" max="1440">
+              <span class="btns" id="presets"></span></label>
+            <label class="f">Quiet hours from<select data-k="power.quiet_start" id="qs"></select><small>no refreshes; the device sleeps through</small></label>
+            <label class="f">Quiet hours until<select data-k="power.quiet_end" id="qe"></select></label>
+            <label class="f">Time zone (POSIX)<input data-k="power.timezone" placeholder="EET-2EEST,M3.5.0/3,M10.5.0/4"><small>used for quiet hours</small></label>
+            <label class="f">Push: wake before slot (s)<input data-k="power.wake_before_s" type="number" min="0" max="600"></label>
+            <label class="f">Push: listen window (s)<input data-k="power.listen_window_s" type="number" min="30" max="1800"></label>
+          </div>
+          <p class="hint" id="pwrHint"></p>
+        </div>
+        <div class="btns"><button class="b primary" data-save="wifi,device,power">Save network &amp; power</button></div>
+      </section>
+
+      <!-- SECURITY -->
+      <section class="tab" id="tab-security">
+        <div class="panel"><span class="legend">Admin login</span>
+          <p class="hint" id="authState"></p>
+          <div class="cols">
+            <label class="f">Username<input data-k="device.admin_user" maxlength="23" autocomplete="username"></label>
+            <label class="f">New password<input id="pw1" type="password" autocomplete="new-password" maxlength="32"></label>
+            <label class="f">Repeat password<input id="pw2" type="password" autocomplete="new-password" maxlength="32"></label>
+          </div>
+          <div class="btns" style="margin-top:10px">
+            <button class="b primary" id="pwSave">Save login</button>
+            <button class="b danger" id="pwClear">Remove password</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SYSTEM -->
+      <section class="tab" id="tab-system">
+        <div class="panel"><span class="legend">Firmware update (OTA)</span>
+          <div class="btns"><input type="file" id="fw" accept=".bin" style="max-width:340px"><button class="b primary" id="fwGo">Upload &amp; install</button></div>
+          <div class="bar" style="margin-top:10px"><i id="fwBar"></i></div>
+          <p class="hint">Upload <code>.pio/build/esp32dev/firmware.bin</code>. Settings are kept. The device reboots when done.</p>
+        </div>
+        <div class="panel"><span class="legend">Configuration backup</span>
+          <div class="btns">
+            <a class="b" href="/api/config?download=1">Export (no secrets)</a>
+            <a class="b warn" href="/api/config?download=1&amp;secrets=1">Export with secrets</a>
+            <input type="file" id="cfgFile" accept=".json" style="max-width:300px"><button class="b" id="cfgImport">Import</button>
+          </div>
+        </div>
+        <div class="panel"><span class="legend">Factory reset</span>
+          <p class="hint">Deletes the stored configuration. The device restarts with defaults (from <code>.env</code> if the firmware was built with one) or opens its setup access point.</p>
+          <button class="b danger" id="factory">Factory reset</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="/ui.js"></script>
+<script src="/admin.js"></script>
+</body>
+</html>

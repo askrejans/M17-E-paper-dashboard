@@ -12,17 +12,25 @@ void EPD_init(void);
 void EPD_init_Fast(void);
 void EPD_sleep(void);
 void EPD_refresh(void);
-void lcd_chkstatus(void);
+bool lcd_chkstatus(void);  // false on BUSY timeout
 
 // Picture display
-void PIC_display(const unsigned char* picData);
+void EPD_writeFrame(const unsigned char *picData);  // transfer only
+void EPD_beginFrame(void);
+void EPD_writeRows(const unsigned char *rows, unsigned count);
+void EPD_endFrame(void);
+void PIC_display(const unsigned char* picData);     // transfer + refresh
 
-// Color definitions for 2-bit color mode
-#define white  0x01
-#define yellow 0x02
-#define red    0x03
-#define black  0x00
+// Panel colour codes for 2-bit colour mode
+#define EPD_BLACK  0x00
+#define EPD_WHITE  0x01
+#define EPD_YELLOW 0x02
+#define EPD_RED    0x03
 
 unsigned char Color_get(unsigned char color);
+
+// Timing of the last PIC_display() (SPI transfer, panel waveform)
+extern uint32_t epdLastTransferMs;
+extern uint32_t epdLastRefreshMs;
 
 #endif

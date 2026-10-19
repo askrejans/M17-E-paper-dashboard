@@ -25,7 +25,7 @@
 //
 // Each driver header must define:
 //   Source_BITS, Gate_BITS, ALLSCREEN_BYTES
-//   black, white, yellow, red (color byte values)
+//   EPD_BLACK, EPD_WHITE, EPD_YELLOW, EPD_RED (colour byte values)
 
 #if defined(EPD_DRIVER_WAVESHARE75BW)
   #include "display/drivers/epd_waveshare75bw.h"
@@ -51,8 +51,17 @@ void EPD_sleep(void);
 // Trigger display refresh (waveform cycle)
 void EPD_refresh(void);
 
-// Wait for display to become idle (BUSY pin)
-void lcd_chkstatus(void);
+// Wait for display to become idle (BUSY pin); false after a timeout
+bool lcd_chkstatus(void);
+
+// Transfer the framebuffer without starting the refresh waveform
+void EPD_writeFrame(const unsigned char *picData);
+
+// Streaming variant for band rendering: begin, send rows top to bottom
+// (any number of chunks), end. Then EPD_refresh().
+void EPD_beginFrame(void);
+void EPD_writeRows(const unsigned char *rows, unsigned count);
+void EPD_endFrame(void);
 
 // Push framebuffer to display via SPI
 // The framebuffer uses 2 bits per pixel with Color_get() mapping
