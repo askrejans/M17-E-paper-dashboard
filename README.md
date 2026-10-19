@@ -11,7 +11,7 @@ operation.
 | **VFD with home, hourly, calendar, house, prices** | **Terminal** |
 | ![VFD theme, other widgets](docs/images/vfd_alt.png) | ![Terminal theme](docs/images/terminal.png) |
 | **Line printer** | **On the panel (v0.6 classic)** |
-| ![Line printer theme](docs/images/printout.png) | ![Photo of the panel](eink.jpg) |
+| ![Line printer theme](docs/images/printout.png)  |
 
 Renders are produced by the host preview tool from sample data — exactly the
 four-colour framebuffer the panel receives.
