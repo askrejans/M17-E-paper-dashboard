@@ -338,6 +338,11 @@ async function load() {
   [cfg, meta] = await Promise.all([api("/api/config"), api("/api/meta")]);
   $("#name").textContent = cfg.device.name;
   document.title = `${cfg.device.name} · Admin`;
+  const lv = cfg.device.language === "LV";
+  $("#normalOpeningsLabel").textContent = lv ? "Parasti atvērtie kontakti" : "Normally open contacts";
+  $("#normalOpeningsHint").textContent = lv
+    ? "Ar komatiem atdalīti kontaktu ID; tos neskaita, izņemot ja trauksmes aiztures laikā vai aktīvā trauksmē signalizācija norāda kontaktu kā cēloni un tas nav apiets. Tukšs = skaita visus atvērtos kontaktus."
+    : "Comma separated; omitted from open counts unless a pending or triggered alarm identifies the contact as a cause and has not bypassed it. Empty = count all open contacts.";
   renderThresholds();
   bindInputs();
   renderThemes();

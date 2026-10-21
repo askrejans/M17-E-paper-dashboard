@@ -99,6 +99,7 @@ static const Translations LV = {
     .weather_lightning_rainy = "Pērkona negaiss",
     .weather_exceptional = "Īpaši apstākļi",
 
+    .header_info = "MĀJAS INFO",
     .header_updated = "atjaunots @",
     .label_sunrise = "Saullēkts",
     .label_sunset = "Saulriets",
@@ -215,6 +216,7 @@ static const Translations EN = {
     .weather_lightning_rainy = "Thunderstorm",
     .weather_exceptional = "Exceptional",
 
+    .header_info = "HOME INFORMATION",
     .header_updated = "updated @",
     .label_sunrise = "Sunrise",
     .label_sunset = "Sunset",

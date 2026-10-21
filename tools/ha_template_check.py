@@ -92,9 +92,9 @@ class States:
 _SENTINEL = object()
 
 
-def make_env():
+def make_env(house=None):
     env = ImmutableSandboxedEnvironment(undefined=Undefined, extensions=["jinja2.ext.loopcontrols"])
-    states = States(HOUSE)
+    states = States(HOUSE if house is None else house)
 
     def state_attr(entity_id, attr):
         s = states._all.get(entity_id)
@@ -249,6 +249,63 @@ def check_package():
     return True
 
 
+def check_normal_openings():
+    """Ordinary interior contacts need an active, unbypassed alarm cause."""
+    contacts = [
+        State("binary_sensor.office_door", "on", device_class="door", friendly_name="Office door"),
+        State("binary_sensor.bedroom_door", "on", device_class="door", friendly_name="Bedroom door"),
+    ]
+    templates = {}
+    for name, csv in (("default", ""), ("configured", "binary_sensor.office_door, binary_sensor.bedroom_door"),
+                      ("invalid", "sensor.not_contact, bad id")):
+        with tempfile.NamedTemporaryFile("w", suffix=".json") as fh:
+            json.dump({"source": {"map": {"normal_openings": csv}}}, fh)
+            fh.flush()
+            templates[name] = template_for(fh.name)
+    if templates["default"] != templates["invalid"]:
+        print("FAIL normal openings: invalid-only configuration changed default template")
+        return False
+
+    def panel(state, opened=None, bypassed=None, entity_id="alarm_control_panel.home"):
+        return State(entity_id, state, open_sensors=opened, bypassed_sensors=bypassed)
+
+    office = "binary_sensor.office_door"
+    bedroom = "binary_sensor.bedroom_door"
+    perimeter = {"Garage door"}
+    cases = [
+        ("default blank", "default", [panel("disarmed")], perimeter | {"Office door", "Bedroom door"}),
+        ("disarmed", "configured", [panel("disarmed")], perimeter),
+        ("disarmed stale cause", "configured", [panel("disarmed", {office: "open"})], perimeter),
+        ("armed without cause", "configured", [panel("armed_home")], perimeter),
+        ("armed stale cause", "configured", [panel("armed_away", {office: "open"})], perimeter),
+        ("pending unrelated cause", "configured", [panel("pending", {office + "_other": "open"})], perimeter),
+        ("pending exact cause", "configured", [panel("pending", {office: None})], perimeter | {"Office door"}),
+        ("triggered cause", "configured", [panel("triggered", {bedroom: "open"})], perimeter | {"Bedroom door"}),
+        ("pending bypassed", "configured", [panel("pending", {office: "open"}, [office])], perimeter),
+        ("triggered bypassed", "configured", [panel("triggered", {bedroom: "open"}, [bedroom])], perimeter),
+        ("non-mapping cause", "configured", [panel("triggered", [office])], perimeter),
+        ("perimeter retained", "configured", [panel("triggered", {"binary_sensor.garage_door": "open"},
+                                                              ["binary_sensor.garage_door"])], perimeter),
+        ("bypass scoped to causal panel", "configured",
+         [panel("pending", {office: "open"}, [office]),
+          panel("triggered", {office: "open"}, None, "alarm_control_panel.other")], perimeter | {"Office door"}),
+    ]
+    problems = []
+    for name, template, panels, expected in cases:
+        try:
+            data = json.loads(make_env(HOUSE + contacts + panels).from_string(templates[template]).render())
+            house = data["house"]
+            if set(house["open"]) != expected or house["open_count"] != len(expected):
+                problems.append(f"{name}: open={house['open']}, count={house['open_count']}")
+        except Exception as exc:  # noqa: BLE001 - report each isolated scenario
+            problems.append(f"{name}: {exc}")
+    if problems:
+        print("FAIL normal openings: " + "; ".join(problems))
+        return False
+    print(f"ok   normal openings: {len(cases)} isolated alarm/contact scenarios; no live HA calls")
+    return True
+
+
 def main():
     if not os.path.exists(PROGRAM):
         sys.exit("build the host tool first: pio run -e preview")
@@ -256,7 +313,7 @@ def main():
         ok = all(check(p, json.load(open(p))) for p in sys.argv[1:])
     else:
         results = [check("mapped", MAPPED), check("auto", AUTO), check("minimal", MINIMAL)]
-        ok = all(results) and check_package()
+        ok = all(results) and check_package() and check_normal_openings()
         if results[0]:
             # feed the rendered payload through the firmware parser + renderer
             out = os.path.join(ROOT, "preview", "ha_rendered.json")

@@ -106,6 +106,7 @@ struct Translations
   const char *weather_exceptional;
 
   // Header / misc
+  const char *header_info;
   const char *header_updated;
   const char *label_sunrise;
   const char *label_sunset;

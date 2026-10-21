@@ -29,11 +29,11 @@ float jf(JsonVariantConst v)
 static void str(JsonVariantConst v, char *dst, size_t n, const char *def = "")
 {
   if (v.is<const char *>())
-    strlcpy(dst, v.as<const char *>(), n);
+    utf8Clip(dst, n, v.as<const char *>(), (int)n);
   else if (v.is<float>() || v.is<int>())
     snprintf(dst, n, "%g", v.as<double>());
   else
-    strlcpy(dst, def, n);
+    utf8Clip(dst, n, def, (int)n);
 }
 
 static void parseRooms(JsonVariantConst rooms, DashboardData &d)
@@ -77,7 +77,7 @@ static void parseRooms(JsonVariantConst rooms, DashboardData &d)
     if (isKnown || d.roomCount >= MAX_ROOMS)
       continue;
     Room &x = d.rooms[d.roomCount++];
-    strlcpy(x.name, kv.key().c_str(), sizeof(x.name));
+    utf8Clip(x.name, sizeof(x.name), kv.key().c_str(), sizeof(x.name));
     if (x.name[0] >= 'a' && x.name[0] <= 'z')
       x.name[0] -= 32;
     x.temp = jf(kv.value()["temp"]);

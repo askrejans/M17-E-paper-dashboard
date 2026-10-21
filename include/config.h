@@ -5,7 +5,7 @@
 
 #define FW_NAME    "M17 E-Paper Dashboard"
 #ifndef FW_VERSION
-#define FW_VERSION "2.0.0"
+#define FW_VERSION "2.0.2"
 #endif
 
 #define US_PER_SEC 1000000ULL

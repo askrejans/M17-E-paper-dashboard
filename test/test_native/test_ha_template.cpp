@@ -81,6 +81,33 @@ void test_template_auto_discovery_toggle(void)
   TEST_ASSERT_TRUE(contains(off, "\"temp\": null"));
 }
 
+void test_template_normal_openings_mapping(void)
+{
+  Settings s;
+  settingsDefaults(s);
+  TEST_ASSERT_EQUAL_STRING("", s.map.normalOpenings);
+  const std::string original = buildHaTemplate(s.map);
+  applySettings(s, R"({"source":{"map":{"normal_openings":"binary_sensor.office_door, binary_sensor.bedroom_door, sensor.not_contact, bad id, binary_sensor.x') }}{{ evil"}}})");
+  const std::string configured = buildHaTemplate(s.map);
+  TEST_ASSERT_TRUE(contains(configured, "binary_sensor.office_door"));
+  TEST_ASSERT_TRUE(contains(configured, "binary_sensor.bedroom_door"));
+  TEST_ASSERT_FALSE(contains(configured, "sensor.not_contact"));
+  TEST_ASSERT_FALSE(contains(configured, "bad id"));
+  TEST_ASSERT_FALSE(contains(configured, "evil"));
+  JsonDocument saved;
+  settingsToJson(s, saved.to<JsonObject>(), true);
+  Settings restored;
+  settingsDefaults(restored);
+  TEST_ASSERT_TRUE(settingsFromJson(restored, saved.as<JsonVariantConst>()));
+  TEST_ASSERT_EQUAL_STRING(s.map.normalOpenings, restored.map.normalOpenings);
+  TEST_ASSERT_EQUAL_STRING(configured.c_str(), buildHaTemplate(restored.map).c_str());
+
+  applySettings(s, R"({"source":{"map":{"normal_openings":""}}})");
+  TEST_ASSERT_EQUAL_STRING(original.c_str(), buildHaTemplate(s.map).c_str());
+  applySettings(s, R"({"source":{"map":{"normal_openings":"sensor.not_contact, bad id"}}})");
+  TEST_ASSERT_EQUAL_STRING(original.c_str(), buildHaTemplate(s.map).c_str());
+}
+
 void test_entity_search_template(void)
 {
   std::string t = buildEntitySearchTemplate("Living", "sensor", 10);

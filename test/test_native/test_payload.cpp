@@ -1,4 +1,5 @@
 #include <unity.h>
+#include <string>
 #include "fixtures.h"
 #include "lang.h"
 
@@ -101,6 +102,50 @@ void test_payload_long_strings_truncated(void)
     "family":[{"name":"Bartholomew-Maximilian","state":"x"}],"message":"m"})", d));
   TEST_ASSERT_EQUAL(sizeof(d.weather.state) - 1, strlen(d.weather.state));
   TEST_ASSERT_EQUAL(sizeof(d.family[0].name) - 1, strlen(d.family[0].name));
+}
+
+void test_payload_utf8_strings_truncated(void)
+{
+  // Each valid code point crosses the byte limit, as long HA labels can.
+  const char *glyphs[] = {"ā", "€", "🙂"};
+  for (const char *glyph : glyphs)
+    for (size_t cut = 1; cut < strlen(glyph); cut++)
+    {
+      std::string name(19 - cut, 'a');
+      std::string room(23 - cut, 'b');
+      std::string title(39 - cut, 'c');
+      std::string message(95 - cut, 'd');
+      JsonDocument input;
+      input["house"]["low_battery"][0] = name + glyph + "end";
+      input["house"]["open"][0] = name + glyph + "end";
+      input["rooms"][0]["name"] = room + glyph + "end";
+      input["events"][0]["title"] = title + glyph + "end";
+      input["message"] = message + glyph + "end";
+      TEST_ASSERT_TRUE(parsePayload(input.as<JsonVariantConst>(), d, "DD.MM.YYYY"));
+      TEST_ASSERT_EQUAL_STRING(name.c_str(), d.house.battery[0]);
+      TEST_ASSERT_EQUAL_STRING(name.c_str(), d.house.open[0]);
+      TEST_ASSERT_EQUAL_STRING(room.c_str(), d.rooms[0].name);
+      TEST_ASSERT_EQUAL_STRING(title.c_str(), d.events[0].title);
+      TEST_ASSERT_EQUAL_STRING(message.c_str(), d.message);
+      JsonDocument state, roundtrip;
+      dataToJson(d, state.to<JsonObject>());
+      std::string json;
+      serializeJson(state, json);
+      TEST_ASSERT_FALSE(deserializeJson(roundtrip, json));
+      TEST_ASSERT_EQUAL_STRING(name.c_str(), roundtrip["house"]["low_battery"][0].as<const char *>());
+      TEST_ASSERT_EQUAL_STRING(message.c_str(), roundtrip["message"].as<const char *>());
+
+      // Legacy room object keys have their own fixed-buffer copy path.
+      input.clear();
+      input["rooms"][room + glyph + "end"]["temp"] = 20;
+      TEST_ASSERT_TRUE(parsePayload(input.as<JsonVariantConst>(), d, "DD.MM.YYYY"));
+      room[0] = 'B';
+      TEST_ASSERT_EQUAL_STRING(room.c_str(), d.rooms[0].name);
+    }
+
+  TEST_ASSERT_TRUE(loadPayload(R"({"house":{"low_battery":["Terases gaismas slēdzis","abcdefghijklmnopqā"]}})", d));
+  TEST_ASSERT_EQUAL_STRING("Terases gaismas sl", d.house.battery[0]);
+  TEST_ASSERT_EQUAL_STRING("abcdefghijklmnopqā", d.house.battery[1]); // complete glyph fits exactly
 }
 
 void test_payload_prices_variants(void)

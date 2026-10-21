@@ -19,12 +19,12 @@ unsigned char *fb;
   X(test_settings_validation) X(test_settings_binding_limits) X(test_widget_and_theme_registry)                        \
   /* payload */                                                                                                        \
   X(test_payload_v2_full) X(test_payload_v1_legacy_rooms) X(test_payload_missing_and_unavailable)                      \
-  X(test_payload_capacity_limits) X(test_payload_long_strings_truncated) X(test_payload_prices_variants)               \
+  X(test_payload_capacity_limits) X(test_payload_long_strings_truncated) X(test_payload_utf8_strings_truncated) X(test_payload_prices_variants)               \
   X(test_payload_forecast_native_ha_names) X(test_ha_forecast_skips_today) X(test_ha_hourly_list)                      \
   X(test_data_to_json_roundtrip) X(test_jf_number_parsing)                                                             \
   /* home assistant template */                                                                                        \
   X(test_valid_entity_id) X(test_template_uses_mapping) X(test_template_invalid_entities_become_null)                  \
-  X(test_template_auto_discovery_toggle) X(test_entity_search_template)                                                \
+  X(test_template_auto_discovery_toggle) X(test_template_normal_openings_mapping) X(test_entity_search_template)       \
   /* language */                                                                                                       \
   X(test_lang_all_strings_present) X(test_lang_switching) X(test_translate_weather_states)                             \
   X(test_translate_family_states) X(test_translate_names)                                                              \

@@ -143,7 +143,7 @@ static void header(const DashboardData &d, const Settings &s)
 {
   // identity
   textScaled(16, 10, s.name, LIT, 2);
-  label(16, 46, "HOME INFORMATION");
+  label(16, 46, lang.header_info);
 
   // Annunciators: plain words, lit only when the condition is true.
   StatusFlags f = computeStatus(d, s);

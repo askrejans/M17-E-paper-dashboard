@@ -249,6 +249,7 @@ bool settingsFromJson(Settings &s, JsonVariantConst in)
       getStr(m[f.key], (char *)&s.map + f.off, ENTITY_LEN);
     getStr(m["price_series_attr"], s.map.priceSeriesAttr, sizeof(s.map.priceSeriesAttr));
     getStr(m["calendars"], s.map.calendars, sizeof(s.map.calendars));
+    getStr(m["normal_openings"], s.map.normalOpenings, sizeof(s.map.normalOpenings));
     getBool(m["auto_discover"], s.map.autoDiscover);
     if (m["rooms"].is<JsonArrayConst>())
       s.map.roomCount = getBindings(m["rooms"], s.map.rooms, MAX_ROOMS, "temp", "hum");
@@ -325,6 +326,7 @@ void settingsToJson(const Settings &s, JsonObject out, bool mask)
     m[f.key] = (const char *)&s.map + f.off;
   m["price_series_attr"] = s.map.priceSeriesAttr;
   m["calendars"] = s.map.calendars;
+  m["normal_openings"] = s.map.normalOpenings;
   m["auto_discover"] = s.map.autoDiscover;
   putBindings(m["rooms"].to<JsonArray>(), s.map.rooms, s.map.roomCount, "temp", "hum");
   putBindings(m["family"].to<JsonArray>(), s.map.family, s.map.familyCount, "entity", nullptr);

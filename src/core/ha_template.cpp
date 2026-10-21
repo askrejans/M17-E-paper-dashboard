@@ -212,8 +212,29 @@ std::string buildHaTemplate(const SourceMap &m)
   {
     o += "{% set op = states.binary_sensor | selectattr('state', 'eq', 'on') "
          "| selectattr('attributes.device_class', 'defined') "
-         "| selectattr('attributes.device_class', 'in', ['door', 'window', 'garage_door', 'opening']) | list %}"
-         "{% set lb = namespace(n=[]) %}"
+         "| selectattr('attributes.device_class', 'in', ['door', 'window', 'garage_door', 'opening']) | list %}";
+    std::string normal = "[";
+    char buf[sizeof(m.normalOpenings)];
+    strlcpy(buf, m.normalOpenings, sizeof(buf));
+    int count = 0;
+    for (char *tok = strtok(buf, ", \t\r\n"); tok; tok = strtok(nullptr, ", \t\r\n"))
+      if (validEntityId(tok) && strncmp(tok, "binary_sensor.", 14) == 0)
+        normal += std::string(count++ ? ", " : "") + lit(tok);
+    normal += "]";
+    if (count)
+      o += "{% set normal_openings = " + normal + " %}"
+           "{% set causes = namespace(ids=[]) %}"
+           "{% for alarm in states.alarm_control_panel | selectattr('state', 'in', ['pending', 'triggered']) %}"
+           "{% set opened = state_attr(alarm.entity_id, 'open_sensors') or {} %}"
+           "{% set bypassed = state_attr(alarm.entity_id, 'bypassed_sensors') or [] %}"
+           "{% if opened is mapping %}{% for entity in opened %}"
+           "{% if entity not in bypassed %}{% set causes.ids = causes.ids + [entity] %}{% endif %}"
+           "{% endfor %}{% endif %}{% endfor %}"
+           "{% set visible = namespace(contacts=[]) %}{% for contact in op %}"
+           "{% if contact.entity_id not in normal_openings or contact.entity_id in causes.ids %}"
+           "{% set visible.contacts = visible.contacts + [contact] %}{% endif %}{% endfor %}"
+           "{% set op = visible.contacts %}";
+    o += "{% set lb = namespace(n=[]) %}"
          "{% for b in states.sensor | selectattr('attributes.device_class', 'defined') "
          "| selectattr('attributes.device_class', 'eq', 'battery') %}"
          "{% if b.state | is_number and b.state | float < 20 %}{% set lb.n = lb.n + [b.name] %}{% endif %}"

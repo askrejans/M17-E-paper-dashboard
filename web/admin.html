@@ -135,6 +135,7 @@
             <label class="f">Calendars<input data-k="source.map.calendars" placeholder="calendar.family, calendar.work"><small>comma separated; empty = all (auto-discover)</small></label>
             <label class="f">Message entity<input data-k="source.map.message" class="ent"><small>input_text / sensor shown as a notice line</small></label>
           </div>
+          <label class="f"><span id="normalOpeningsLabel">Normally open contacts</span><input data-k="source.map.normal_openings" maxlength="159" placeholder="binary_sensor.study_door, binary_sensor.hall_door"><small id="normalOpeningsHint">Comma separated; omitted from open counts unless a pending or triggered alarm identifies the contact as a cause and has not bypassed it. Empty = count all open contacts.</small></label>
           <h4 class="dim">Extra sensors <button class="b" data-add="extras" style="padding:4px 10px">+ add</button></h4>
           <div class="list" id="list-extras"></div>
           <datalist id="entities"></datalist>

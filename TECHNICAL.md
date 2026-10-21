@@ -149,6 +149,14 @@ configuration:
 | thermostat | first `climate.*` (or `map.thermostat`): set/current temperature, mode, hvac_action |
 | house | lights on, open `binary_sensor` with device class door/window/garage_door/opening, battery sensors < 20 %, pending `update.*`, first playing `media_player` |
 
+`map.normal_openings` is an optional comma-separated list of `binary_sensor.*`
+contacts that are normally open (for example, an internal door). With
+house auto-discovery, these contacts are omitted from `house.open` and
+`house.open_count` unless a pending or triggered HA alarm identifies the
+contact in `open_sensors` and does not list it in `bypassed_sensors`. Stale
+alarm attributes while disarmed do not create a warning. Empty (the default)
+keeps counting all open contacts. The display only reads alarm state.
+
 Numeric states are emitted as `float(none)`, so `unknown`/`unavailable`
 become JSON `null` and render as `--` instead of a misleading 0.
 
@@ -226,6 +234,7 @@ factory reset) defaults are used, seeded from the optional build-time `.env`
                         "price": "", "power": "", "voltage": "", "frequency": "", "power_factor": "",
                         "today": "", "month": "", "price_series": "", "price_series_attr": "today",
                         "calendars": "", "message": "", "sun": "sun.sun", "thermostat": "",
+                        "normal_openings": "",
                         "auto_discover": true } },
   "display": { "theme": "classic|vfd|terminal|printout",
                "slots": ["outdoor","indoor","forecast","family","network","power"],

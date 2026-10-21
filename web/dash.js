@@ -3,6 +3,7 @@
 
 const LANGS = {
   EN: {
+    subtitle: "Home information display",
     home: "Home", thermostat: "Thermostat", outdoor: "Outdoor", indoor: "Indoor", forecast: "Forecast", hourly: "Next 24 hours",
     people: "People", network: "Network", power: "Electricity", prices: "Energy price today", house: "House", calendar: "Calendar",
     extras: "Sensors", sun: "Sun & notes",
@@ -22,6 +23,7 @@ const LANGS = {
       lightning: "Lightning", "lightning-rainy": "Thunderstorm", exceptional: "Exceptional" },
   },
   LV: {
+    subtitle: "MĀJAS INFO",
     home: "Mājas", thermostat: "Termostats", outdoor: "Ārā", indoor: "Telpās", forecast: "Prognoze", hourly: "Tuvākās 24 stundas",
     people: "Cilvēki", network: "Tīkls", power: "Elektrība", prices: "Elektrības cena šodien", house: "Māja", calendar: "Kalendārs",
     extras: "Sensori", sun: "Saule un piezīmes",
@@ -288,6 +290,7 @@ async function refresh() {
     document.documentElement.lang = (S.language || "en").toLowerCase();
     document.title = `${S.name} · ${T.home}`;
     $("#name").textContent = S.name;
+    $("#sub").textContent = T.subtitle;
     $("#clock").innerHTML = seg(d.time || "--:--", 58);
     $("#date").textContent = d.date || "";
     $("#wd").textContent = wday(d, 0, true);

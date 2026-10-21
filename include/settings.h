@@ -50,6 +50,7 @@ struct SourceMap
   char sun[ENTITY_LEN];           // usually sun.sun
   char thermostat[ENTITY_LEN];    // climate.*; empty = first climate entity (auto-discover)
   char calendars[160];            // comma separated calendar.* ids; empty = all
+  char normalOpenings[160];       // comma separated normally open binary_sensor.* ids
   bool autoDiscover;              // fill unmapped people/weather/house from HA
 };
 
